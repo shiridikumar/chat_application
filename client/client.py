@@ -1,4 +1,3 @@
-from pickle import TRUE
 import socket
 import json
 import threading
@@ -15,7 +14,7 @@ except:
 db = conn.users
 collection = db.server_mapping
 HOST = "127.0.0.1"
-PORT = 5050
+PORT = 5000
 HEADER=64
 
 cli=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -31,7 +30,8 @@ def recv_msg():
 
 
 def send_msg(id,msg):
-    m={"id":id,"msg":msg}
+    m={"_id":id,"msg":msg}
+    m["from"]=str(user["_id"])
     data = json.dumps(m)
     message = bytes(data,encoding="utf-8")
     length = len(message)
@@ -92,3 +92,8 @@ while(sending):
     send_msg(str(to["_id"]),inp)
     if(inp=="exit"):
         break
+
+
+
+
+

@@ -1,17 +1,20 @@
 import socket
 import threading
 import json
+import requests
 HOST = ""
-PORT = 5050
-HEADER=64
-server=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-server.bind((HOST,PORT))
+PORT = 5000
+HEADER = 64
+DB_URL = "http://127.0.0.1:8080/server_map"
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((HOST, PORT))
 
 
-def send_msg(conn,from_id,msg):
-    m={"id":from_id,"msg":msg}
+def send_msg(conn, from_id, msg):
+    m = {"id": from_id, "msg": msg}
     data = json.dumps(m)
-    message = bytes(data,encoding="utf-8")
+    message = bytes(data, encoding="utf-8")
     length = len(message)
     length = str(length).encode("utf-8")
     length += b' ' * (HEADER - len(length))
@@ -20,16 +23,18 @@ def send_msg(conn,from_id,msg):
 
 
 def recv_msg(conn):
-    length=conn.recv(HEADER).decode("utf-8")
+    length = conn.recv(HEADER).decode("utf-8")
     if(length):
         msg = conn.recv(int(length)).decode("utf-8")
-        msg=json.loads(msg)
-        print(msg["msg"],msg["id"])
-        if(msg)=="exit":
+        # msg = json.loads(msg)
+        # print(msg)
+        r = requests.post(url=DB_URL, data=msg)
+        data = r.json()
+        print(data)
+
+        if(msg) == "exit":
             return False
     return True
-
-
 
 
 def send_end(conn,adress):
@@ -49,6 +54,7 @@ def communicate(conn,address):
 
 
 server.listen()
+
 while(1):
     conn,address=server.accept()
     thread = threading.Thread(target=communicate, args=(conn, address))
