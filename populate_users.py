@@ -18,3 +18,4 @@ ind=0
 for i in users:
     collection.insert_one({"name":i,"server":maps[ind]})
     ind+=1
+

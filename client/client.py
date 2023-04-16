@@ -10,7 +10,8 @@ try:
 except:
 	print("Could not connect to MongoDB")
 
-# database
+
+
 db = conn.users
 collection = db.server_mapping
 HOST = "127.0.0.1"

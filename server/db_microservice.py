@@ -42,7 +42,6 @@ def server_map():
         user["_id"]=str(user["_id"])
         return user
     return {1:1}
-
-
+    
 if __name__=="__main__":
     app.run(debug=True,port=8080)
