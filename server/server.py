@@ -5,6 +5,8 @@ import sys
 import requests
 import argparse
 HOST = ""
+
+## if central_server run with PORT =10000
 PORT = 5000
 HEADER = 64
 DB_URL = "http://127.0.0.1:8080/server_map"
@@ -56,11 +58,20 @@ def recv_msg(conn):
     length = conn.recv(HEADER).decode("utf-8")
     if(length):
         msg = conn.recv(int(length)).decode("utf-8")
-        r = requests.post(url=DB_URL, data=msg)
-        data = r.json()
-        print(data,msg)
+        print(msg)
+        msg=json.loads(msg)
+        if(msg["msg"]!="CONNECT_MSG"):
+            print(msg,"________________")
+            r = requests.post(url=DB_URL, data=msg)
+            data = r.json()
+            print(data,"******************\n",msg["msg"])
+
         if(msg) == "exit":
             return False
+
+
+        
+        
     return True
 
 

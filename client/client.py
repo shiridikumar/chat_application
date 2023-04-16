@@ -15,7 +15,7 @@ except:
 db = conn.users
 collection = db.server_mapping
 HOST = "127.0.0.1"
-PORT = 5000
+PORT = 5050
 HEADER=64
 
 cli=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -26,7 +26,6 @@ def recv_msg():
     if(length):
         msg = cli.recv(int(length)).decode("utf-8")
         msg=json.loads(msg)
-        # print(msg["msg"],msg["id"])
     return True
 
 
