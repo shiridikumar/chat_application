@@ -61,7 +61,7 @@ def recv_msg(connection,port):
     if(length):
         msg = connection.recv(int(length)).decode("utf-8")
         msg=json.loads(msg)
-        if(msg["id"]!=2):
+        if(msg["_id"]!=1 and msg["_id"]!=2):
             msgs_db[msg["target"]].append(msg)
             print(msg)
             return msg
@@ -85,7 +85,7 @@ def recieving_end(conn,port):
 
 
 def send_end(conn,port):
-    send_msg({"msg":"CONNECT_MSG"},conn)
+    send_msg({"msg":"SERVER_CONNECT_MSG"},conn)
     li=msgs_db[port]
     point=0
     while(True):
@@ -128,13 +128,6 @@ for i in range(len(available_servers)):
 for i in range(len(available_servers)):
     thread = threading.Thread(target=connect_server, args=(server_connections[i],available_servers[i]))
     thread.start()
-
-
-
-# while(1):
-#     conn,address=server.accept()
-#     thread = threading.Thread(target=communicate, args=(conn, address))
-#     thread.start()
 
 
 

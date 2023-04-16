@@ -1,0 +1,9 @@
+1) run mongod
+2) python3 populate_users.py (only one time after running mongod)
+3) cd server and run 
+    python3 db_microservice.py ,
+    python3 server.py -PORT=5000 ,
+    python3 server.py -PORT=5050,
+    python3 central_server.py
+4)cd into client folder and run
+    python3 client.py

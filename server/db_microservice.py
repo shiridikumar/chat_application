@@ -35,9 +35,10 @@ def after_request(response):
 @cross_origin(supports_credentials=True,origin='*')
 def server_map():
     data=request.data
+    # print(data)
     data=json.loads(data)
     print(data)
-    if(data["_id"]!=2  and data["_id"]!=1):
+    if(data["msg"]!="CONNECT_MSG"):
         user=collection.find_one({"_id":ObjectId(data["_id"])})
         user["_id"]=str(user["_id"])
         return user

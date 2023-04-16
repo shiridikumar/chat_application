@@ -10,12 +10,25 @@ try:
 except:
 	print("Could not connect to MongoDB")
 
-
-
 db = conn.users
 collection = db.server_mapping
+
+def login():
+    ind=1
+    l=[]
+    res=collection.find({})
+    for i in res:
+        print(f'{ind} . {i["name"]}')
+        ind+=1
+        l.append(i)
+    log=int(input("\nChoose login : "))
+    print("----------------------------------\n")
+    return l[log-1]
+
+
+user=login()
 HOST = "127.0.0.1"
-PORT = 5050
+PORT = user["server"]
 HEADER=64
 
 cli=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -26,6 +39,7 @@ def recv_msg():
     if(length):
         msg = cli.recv(int(length)).decode("utf-8")
         msg=json.loads(msg)
+        print(msg)
     return True
 
 
@@ -51,17 +65,6 @@ sending=True
 
 
 
-def login():
-    ind=1
-    l=[]
-    res=collection.find({})
-    for i in res:
-        print(f'{ind} . {i["name"]}')
-        ind+=1
-        l.append(i)
-    log=int(input("\nChoose login : "))
-    print("----------------------------------\n")
-    return l[log-1]
 
 
 
@@ -79,11 +82,10 @@ def message_list(user_id):
     to=int(input("Choose whom to message : "))
     return l[to-1]
 
-user=login()
-m={"id":user["_id"],"msg":"connect_msg"}
+m={"_id":user["_id"],"msg":"connect_msg"}
 
 
-send_msg(1,"CONNECT_MSG")
+send_msg(str(user["_id"]),"CONNECT_MSG")
 thread = threading.Thread(target=recieving_end, args=(1,2))
 thread.start()
 while(sending):

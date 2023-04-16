@@ -22,7 +22,7 @@ for i in users:
     ind+=1
 	
 
-servers=[5000]
+servers=[5000,5050]
 server_Collection=db.servers
 server_Collection.delete_many({})
 for i in servers:
