@@ -27,12 +27,13 @@ def login():
 
 
 user=login()
-HOST = "192.168.255.51"
-PORT = user["server"]
+HOST = user["server"].split(":")[0]
+PORT =int(user["server"].split(":")[1])
 HEADER=64
 
 cli=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 cli.connect((HOST,PORT))
+print("Connected to server ",HOST,"and",PORT)
 
 def recv_msg():
     length=cli.recv(HEADER).decode("utf-8")

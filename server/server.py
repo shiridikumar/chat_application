@@ -5,7 +5,7 @@ import sys
 from tkinter.messagebox import NO
 import requests
 import argparse
-HOST = "192.168.255.60"
+HOST = "10.1.39.116"
 
 ## if central_server run with PORT =10000
 PORT = 5000
@@ -15,10 +15,10 @@ global redirection_server
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
-parser.add_argument("-SERVER","--server",help="Show Output")
+parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
 #need to  Store in a different way -------------------
-
+args.server="10.1.39.116"
 global connection_objects
 connection_objects={}
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,7 +45,7 @@ except :
     log(f"Failed to connect")
 
 else:
-    log("Listening to PORT {} ...".format(PORT),"succesful")
+    log("Server {} ,Listening to PORT {} ...".format(HOST,PORT),"succesful")
 
 
 
@@ -73,9 +73,6 @@ def recv_msg(conn):
 
         m=json.loads(msg)
         if(m["msg"]=="CONNECT_MSG"):
-            # send_msg(conn,2,"sending_from_server",1)
-            # if(m["_id"]=="643bf84facc4a0e007444aa4"):
-            #     print(conn,"this is akanksha")
             connection_objects[m["_id"]]=conn
         if ("target" not in m):
             if(m["msg"]=="SERVER_CONNECT_MSG"):
