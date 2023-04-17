@@ -25,7 +25,6 @@ def login():
     print("----------------------------------\n")
     return l[log-1]
 
-
 user=login()
 HOST = user["server"].split(":")[0]
 PORT =int(user["server"].split(":")[1])
@@ -63,12 +62,6 @@ def recieving_end(a,b):
             break
 
 sending=True
-
-
-
-
-
-
 def message_list(user_id):
     res=collection.find({})
     ind=1
