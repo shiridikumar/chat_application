@@ -5,7 +5,7 @@ import sys
 from tkinter.messagebox import NO
 import requests
 import argparse
-HOST = ""
+HOST = "192.168.255.60"
 
 ## if central_server run with PORT =10000
 PORT = 5000
@@ -15,13 +15,16 @@ global redirection_server
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
+parser.add_argument("-SERVER","--server",help="Show Output")
 args = parser.parse_args()
 #need to  Store in a different way -------------------
+
 global connection_objects
 connection_objects={}
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 if(args.port_no!=None):
     PORT=args.port_no
+
 
 def log(statement,value=""):
     print(f"[ {statement} ]",end=" ")
@@ -30,6 +33,8 @@ def log(statement,value=""):
     print()
 
 try:
+    if(args.server==None):
+        raise ValueError
     if(args.port_no==None):
         log("Trying to Bind to default port ")
     else:
