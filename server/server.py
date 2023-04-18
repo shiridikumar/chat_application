@@ -2,7 +2,6 @@ import socket
 import threading
 import json
 import sys
-from tkinter.messagebox import NO
 import requests
 import argparse
 HOST = "10.1.39.116"
@@ -82,6 +81,7 @@ def send_msg(conn, from_id, msg,to,server=""):
 def recv_msg(conn):
     global redirection_server,connection_objects
     length = conn.recv(HEADER).decode("utf-8")
+
     if(length):
         msg = conn.recv(int(length)).decode("utf-8")
 

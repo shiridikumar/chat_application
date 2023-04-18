@@ -8,6 +8,7 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import Homescreen from './components/Homescree';
+import Signin from './components/SIgnin';
 
 function App() {
   return (
@@ -15,8 +16,8 @@ function App() {
       <BrowserRouter>
         <Routes>
 
-          <Route exact path="/" element={< Homescreen/>} />
-          {/* <Route exact path="/signin" element={<Signin />} /> */}
+          <Route exact path="/home" element={< Homescreen/>} />
+          <Route exact path="/" element={<Signin/>} />
           {/* <Route exact path="/dashboard" element={<Dashboard />} /> */}
           {/* <Route exact path="/signup" element={<SignUp />} /> */}
 
