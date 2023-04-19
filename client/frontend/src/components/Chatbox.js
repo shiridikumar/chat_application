@@ -6,16 +6,21 @@ import Messagebox from './Messagebox';
 
 const Chatbox = (props) => {
     const row = []
+    let chats=props.chats
+    if(!(props.chats)){
+        chats=[];
+    }
+    console.log(props.chats);
     const loadmessages = () => {
-        for (var i = 0; i < props.chats.length; i++) {
+        for (var i = 0; i < chats.length; i++) {
             var align = "row-reverse"
-            if (props.chats[i].from == props.name) {
+            if (chats[i].from == props.name) {
                 align = "row"
 
             }
-            console.log(props.chats[i].from,props.name)
+            console.log(chats[i].from,props.name)
             row.push(
-                <Messagebox align={align} text={props.chats[i].msg} />
+                <Messagebox align={align} text={chats[i].msg} />
             )
         }
         return row;

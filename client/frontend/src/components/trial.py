@@ -1,4 +1,5 @@
 import eventlet
+import gevent
 import socketio
 from flask_socketio import SocketIO
 from http.client import responses
@@ -15,15 +16,39 @@ import requests
 import pymongo
 from pymongo import MongoClient
 import socket
+import argparse
 import threading
-import time
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
+parser.add_argument("-IP","--server",help="Show Output")
+args = parser.parse_args()
+#need to  Store in a different way -------------------
+args.server="10.1.39.116"
 PORT=5000
-app=Flask(__name__)
+
+
+conn = MongoClient("localhost",27017)
+db = conn.users
+
+
 HOST="10.1.39.116"
+try:
+    if(args.server==None):
+        raise ValueError
+    PORT=int(PORT)
+except :
+    print(f"Failed to connect")
+
+else:
+    print("Server {} ,Listening to PORT {} ...".format(HOST,PORT),"succesful")
+
+
+
+app=Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app,support_credentials=True)
-socketio = socketio(app,cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*",async_handlers=True, pingTimeout=900)
 HEADER=64
 global current_outgoing_conns
 current_outgoing_conns={}
@@ -91,9 +116,38 @@ def recv_msg(conn,m):
 @socketio.on('message')
 @cross_origin(supports_credentials=True,origin='*')
 def handle_message(data):
-    print("request came")
+    # recv_msg(request.sid,data)
+    print(data)
+    from_=data["from"]
+    to=data["to"]
+    chatname=sorted([from_,to])
+    chathis=db.chats.find_one({"chatname":chatname})
+    if(chathis!=None):
+        chathis["history"].append(data)
+        db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+    else:
+        chathis={"history":[data],"chatname":chatname}
+        db.chats.insert_one(chathis)
+    
+    # socketio.emit("message",chathis,room=conn)
+
     return {"success":"200"}
     
+
+
+@app.route("/fetchchat",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def fetchchat():
+    data =json.loads(request.data)
+    print(data)
+    user=data["user"]
+    chat=data["chat"]
+    chatname=sorted([user,chat])
+    chats=db.chats.find_one({"chatname":chatname})
+    if(chats==None):
+        chats={"history":[]}
+    return {"chats":chats["history"]}
+
 
 
 if __name__ == '__main__':

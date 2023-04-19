@@ -12,8 +12,10 @@ const Homescreen = () => {
     const tiles = []
     const location = useLocation();
     const server_details = location.state.data;
-    console.log(server_details, "**********")
-    const socket = io(`ws://${server_details.server}`);
+    const socket = io(`ws://10.1.39.116:5000`);
+    const socketRef = React.useRef();
+    socketRef.current = socket;
+    const chatnameref = React.useRef();
     const initbox = () => {
         return (
             <div>
@@ -24,15 +26,72 @@ const Homescreen = () => {
     }
     const initChatbox = initbox();
 
-    const [chat, setchat] = React.useState("")
+    const [chatname, setchat] = React.useState("")
     const [chatbox, setchatbox] = React.useState(initChatbox);
-    const [text, settext] = React.useState("");
+    const [textfield, settext] = React.useState("");
+    const [submitted, setsubmitted] = React.useState(false);
+    const [dt, setdt] = React.useState("");
     const navigate = useNavigate();
     const HEADER = 64;
+    const [chathis, setchats] = React.useState();
+    const [chatui, setchatui] = React.useState(initChatbox);
 
-    socket.on('message', function(data) {
-        console.log(data,"___________________")
+    socket.on('message', function (data) {
+        console.log(data, "___________________")
     });
+
+    React.useEffect(() => {
+        setchat(chatname);
+        if (chatname != "" && chatname) {
+            const chat = showchat(chatname);
+            setchatbox(chat);
+        }
+    }, [chatname])
+
+    React.useEffect(() => {
+        if (chatname != "" && chatname) {
+            setchats(chathis);
+            const temp = getchat()
+            setchatui(temp);
+        }
+
+    }, [chathis])
+
+
+
+    React.useEffect(() => {
+        settext(textfield);
+        setdt(textfield);
+    }, [textfield])
+
+    React.useEffect(() => {
+        setsubmitted(submitted);
+        if (textfield != "") {
+            sendchat(textfield);
+        }
+
+    }, [submitted])
+
+
+
+    const sendchat = (msg) => {
+        const obj = {
+            "from": server_details.user,
+            "msg": msg,
+            "to": chatname
+        }
+        const res = socketRef.current.emit('message', obj)
+        const temp = [];
+        if (chathis) {
+            for (var i = 0; i < chathis.length; i++) {
+                temp.push(chathis[i]);
+            }
+        }
+        temp.push(obj);
+        setchats(temp);
+
+
+    }
 
     // const send_msg = (id, msg) => {
     //     let m = { "_id": id, "msg": msg }
@@ -56,7 +115,7 @@ const Homescreen = () => {
 
     const showchat = (cha) => {
 
-        axios.post(`http://10.1.39.116:8080/fetchchat`, { chat: cha, user: server_details.user }, {
+        axios.post(`http://${server_details.server}/fetchchat`, { chat: cha, user: server_details.user }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -64,74 +123,42 @@ const Homescreen = () => {
             }
 
         }).then(response => {
-            console.log(response.data);
-            socket.emit('message',{"this is akanksha":"this is shiridi"})
+            console.log(response.data,"????????????????????????");
+            setchats(response.data["chats"])
+
+            // console.log(response.data["chats"],chathis)
+            // const res=socketRef.current.emit('message',{1:2,2:3})
+
+            console.log("ok emitted");
         })
             .catch(err => {
                 console.log(err);
             })
 
-        /*
-        demo example of chat storage         */
 
-        const a = [{
-            "from": "xyz",
-            "to": "Shiridi",
-            "msg": "hi how are you , is eveyrthing fine"
-        },
-        {
-            "from": "xyz",
-            "to": "Shiridi",
-            "msg": "chaala rojulu ayyindi neetho matladi"
-        },
-        {
-            "from": "Shiridi",
-            "to": "xyz",
-            "msg": "yah im fine , what about you"
-        },
-        {
-            "from": "Shiridi",
-            "to": "xyz",
-            "msg": "something"
-        },
-        {
-            "from": "Shiridi",
-            "to": "xyz",
-            "msg": "dasara blockbuster telusa"
-        },
-        {
-            "from": "xyz",
-            "to": "Shiridi",
-            "msg": "yah kinda meeda oopu nani  anna thopu :)"
-        },
-        {
-            "from": "xyz",
-            "to": "Shiridi",
-            "msg": "ok bye"
-        }
-        ]
+    }
+
+    const getchat = () => {
         return (
             <div className="chatblock" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "rgb(240,242,245)" }}>
-                <Chatbox chats={a} name={cha} />
+                <Chatbox chats={chathis} name={chatname} />
                 <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} >
-                    <input placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value); console.log(text) }}></input>
-                    <SendIcon onClick={() => { console.log(text) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
+                    <input placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
+                    <SendIcon onClick={() => { setsubmitted(!(submitted)) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
 
                 </div>
 
             </div>
         )
-
-
     }
+
+
+
     const handlechatlick = (e) => {
+
         setchat(e.target.id)
+        chatnameref.current = chatname
         const cha = e.target.id;
-        const chat = showchat(cha);
-        setchatbox(chat);
-
-
-
 
     }
 
@@ -139,7 +166,7 @@ const Homescreen = () => {
         // tiles.push(<Tiles name={-1} />)
         for (var i = 0; i < chats.length; i++) {
             tiles.push(
-                <div id={chats[i]} className={chats[i] + "_chat"} onClick={(e) => { handlechatlick(e) }} style={{ cursor: "pointer" }}>
+                <div id={chats[i]} className={chats[i] + "_chat"} onClick={(e) => { setchat(e.target.id) }} style={{ cursor: "pointer" }}>
                     <Tiles name={chats[i]} last={lastchat[i]} />
                 </div>
             )
@@ -153,7 +180,7 @@ const Homescreen = () => {
                     <Tiles name={-1} />
                 </div>
                 <div className="chatname" style={{ width: "100%", background: "rgb(0,168,132)" }}>
-                    <h6 style={{ fontSize: "20px" }}>{chat}</h6>
+                    <h6 style={{ fontSize: "20px" }}>{chatname}</h6>
                 </div>
 
             </div>
@@ -167,7 +194,7 @@ const Homescreen = () => {
                     </ul>
                 </div>
                 <div className="chatbox" style={{ width: "100%", "height": "100%", display: "flex", flexDirection: "column", "alignItems": "center", justifyContent: "center" }}>
-                    {chatbox}
+                    {chatui}
                 </div>
 
             </div>

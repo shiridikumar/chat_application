@@ -71,11 +71,10 @@ def fetchchat():
     data =json.loads(request.data)
     user=data["user"]
     chat=data["chat"]
+    print(user,chat)
     chatname=sorted([user,chat])
     chats=db.chats.find_one({"chatname":chatname})
     print(chats)
-    return {chats:chats}
-
 
 
 if __name__=="__main__":
