@@ -6,9 +6,9 @@ import Messagebox from './Messagebox';
 
 const Chatbox = (props) => {
     const row = []
-    let chats=props.chats
-    if(!(props.chats)){
-        chats=[];
+    let chats = props.chats
+    if (!(props.chats)) {
+        chats = [];
     }
     console.log(props.chats);
     const loadmessages = () => {
@@ -18,19 +18,26 @@ const Chatbox = (props) => {
                 align = "row"
 
             }
-            console.log(chats[i].from,props.name)
+            console.log(chats[i].from, props.name)
             row.push(
                 <Messagebox align={align} text={chats[i].msg} />
             )
         }
         return row;
     }
+    React.useEffect(() => {
+        var messageBody = document.getElementById('scrollbar');
+        console.log(messageBody, "************************************************************")
+        messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
+
+
+
+    }, [])
 
     return (
-        <div className="chats" style={{ width: "100%", height: "100%" }}>
+        <div className="chats" id="scrollbar" style={{ overflowY: "scroll", width: "100%", height: "100%", display: "block" }}>
             {loadmessages()}
         </div>
-
     )
 }
 

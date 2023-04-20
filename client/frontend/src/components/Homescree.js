@@ -10,10 +10,45 @@ const Homescreen = () => {
     const tiles = []
     const location = useLocation();
     const server_details = location.state.data;
-    const chats = server_details.contacts
-    const lastchat = server_details.last
+    const [chats, setcontacts] = React.useState(server_details.contacts);
+    const [lastchat, setlastchat] = React.useState(server_details.last);
     // const [sock,setsocket]=React.useState();
     const sock = React.useRef(0);
+
+    const update_list = (from, last, currchats, currlastchat) => {
+        console.log(currchats, currlastchat, "________________")
+        let flag = 0;
+        let ind =0;
+        for (var i = 0; i < currchats.length; i++) {
+            if (currchats[i] == from) {
+                flag = 1;
+                ind =i;
+                break
+            }
+        }
+        const temp = []
+        const temp2 = []
+        if (flag == 0) {
+            temp.push(from);
+            temp2.push(last);
+        }
+
+        for (var i = 0; i < currchats.length; i++) {
+            temp.push(currchats[i]);
+            if(i==ind){
+                temp2.push(last);
+            }
+            else{
+                temp2.push(currlastchat[i]);
+            }
+        }
+        console.log("updating ra wolfa **************")
+        setlastchat(temp2);
+        setcontacts(temp);
+
+
+
+    }
 
 
 
@@ -22,16 +57,17 @@ const Homescreen = () => {
 
         socket.on('message', function (data) {
             console.log(data, "___________________")
+            update_list(data["from"], data["msg"]);
+
         });
         sock.current = socket;
-
-        // setsocket(socket);
     }, [])
 
-    // React.useEffect(()=>{
-    //     // setsocket(sock);
-    //     console.log(sock,":::::::::::::::::");
-    // },[sock])
+    React.useEffect(() => {
+        // setsocket(sock);
+        setlastchat(lastchat);
+        setcontacts(chats);
+    }, [chats, lastchat])
 
 
     const chatnameref = React.useRef();
@@ -106,13 +142,15 @@ const Homescreen = () => {
         // console.log(sock);
         const res = sock.current.emit('message', obj)
         const temp = [];
+        update_list(obj["to"], obj["msg"], chats, lastchat);
+        const temp1 = [];
         if (chathis) {
             for (var i = 0; i < chathis.length; i++) {
-                temp.push(chathis[i]);
+                temp1.push(chathis[i]);
             }
         }
-        temp.push(obj);
-        setchats(temp);
+        temp1.push(obj);
+        setchats(temp1);
 
 
     }
