@@ -46,8 +46,18 @@ def signin():
     user=db.users.find_one({"email":email})
     serv=consistent_hashing.get_server(str(user["_id"]))
     db.server_mapping.insert_one({"email":email,"server":server_addr[serv],"server_name":serv})
+    res=db.chats.find({"chatname": { "$in": [email] } })
+    contacts=[]
+    lastmessage=[]
+    for i in res:
+        cont=i["chatname"][0]
+        if(i["chatname"][0]==email):
+            cont=i["chatname"][1]
+        contacts.append(cont)
+        lastmessage.append(i["history"][-1]["msg"])
+    print(lastmessage,contacts)
 
-    return {"server_name":serv,"server":server_addr[serv]}
+    return {"server_name":serv,"server":server_addr[serv],"last":lastmessage,"contacts":contacts}
 
 
 

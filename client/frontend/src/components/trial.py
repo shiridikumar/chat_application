@@ -139,7 +139,7 @@ def handle_message(data):
 @cross_origin(supports_credentials=True,origin='*')
 def fetchchat():
     data =json.loads(request.data)
-    print(data)
+    print(data,"*************")
     user=data["user"]
     chat=data["chat"]
     chatname=sorted([user,chat])
@@ -147,7 +147,6 @@ def fetchchat():
     if(chats==None):
         chats={"history":[]}
     return {"chats":chats["history"]}
-
 
 
 if __name__ == '__main__':
