@@ -143,15 +143,23 @@ const Homescreen = () => {
         setdt(textfield);
 
     }, [textfield])
+    
+
+
+
+   
+    
 
     React.useEffect(() => {
-        setsubmitted(submitted);
+        
         if (textfield != "") {
+            setsubmitted(submitted);
             sendchat(textfield);
             var el=document.getElementById("inputtext");
             el.value="";
-    
+            settext("");
         }
+        
     }, [submitted])
 
 
@@ -201,15 +209,22 @@ const Homescreen = () => {
             .catch(err => {
                 console.log(err);
             })
-
-
     }
 
     const getchat = () => {
+        const handleKeyDown = event => {
+            console.log('User pressed: ', event.key);
+        
+            if (event.key === 'Enter') {
+              // 👇️ your logic here
+              console.log('Enter key pressed ✅');
+              setsubmitted(!(submitted))
+            }
+          };
         return (
             <div className="chatblock" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "rgb(240,242,245)" }}>
                 <Chatbox chats={chathis} name={chatname} />
-                <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} >
+                <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} onKeyDown={handleKeyDown}>
                     <input id ="inputtext" placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
                     <SendIcon onClick={() => { setsubmitted(!(submitted)) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
 
@@ -240,11 +255,20 @@ const Homescreen = () => {
         }
         return tiles;
     }
+    const handleKeyDown = event => {
+        console.log('User pressed: ', event.key);
+    
+        if (event.key === 'Enter') {
+          // 👇️ your logic here
+          console.log('Enter key pressed ✅');
+          setclick(!(chatclick))
+        }
+      };
     return (
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding:"0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
-                    <div className="emailfield">
+                    <div className="emailfield" onKeyDown={handleKeyDown} >
                         <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setchat(e.target.value) }}></input>
                         <SendIcon onClick={() => { setclick(!(chatclick)) }} sx={{ cursor: "pointer", color: "white", width: "40px", height: "40px" }} />
                     </div>
