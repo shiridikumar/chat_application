@@ -10,15 +10,15 @@ const Homescreen = () => {
     const tiles = []
     const location = useLocation();
     const server_details = location.state.data;
-    const [chats, setcontacts] = React.useState(server_details.contacts);
-    const [lastchat, setlastchat] = React.useState(server_details.last);
+    const [chats, setcontacts] = React.useState([]);
+    const [lastchat, setlastchat] = React.useState([]);
     // const [sock,setsocket]=React.useState();
     const sock = React.useRef(0);
 
     const update_list = (from, last, currchats, currlastchat) => {
         console.log(currchats, currlastchat, "________________")
         let flag = 0;
-        let ind =0;
+        let ind =-1;
         for (var i = 0; i < currchats.length; i++) {
             if (currchats[i] == from) {
                 flag = 1;
@@ -33,27 +33,46 @@ const Homescreen = () => {
             temp2.push(last);
         }
 
+
+
         for (var i = 0; i < currchats.length; i++) {
-            temp.push(currchats[i]);
             if(i==ind){
                 temp2.push(last);
+                temp.push(currchats[i]);
+                break;
             }
-            else{
+        }
+        for(var i=0;i<currchats.length;i++){
+            if(i!=ind){
                 temp2.push(currlastchat[i]);
+                temp.push(currchats[i]);
             }
         }
         console.log("updating ra wolfa **************")
         setlastchat(temp2);
         setcontacts(temp);
-
-
-
     }
 
 
 
     React.useEffect(() => {
-        const socket = io(`ws://10.1.39.116:5000`);
+        const socket = io(`ws://${server_details.server}`);
+
+        axios.post(`http://${server_details.server}/userdata`, {email:server_details.user}, {
+            headers: {
+      
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+              'Content-Type': "application/json",
+            }
+      
+            }).then(response=>{
+              console.log(response.data);
+              setcontacts(response.data.contacts);
+              setlastchat(response.data.lastmessage);
+            //   response.data["user"]=user
+            //   navigate("/home",{state:{data:response.data}})
+            })
 
         socket.on('message', function (data) {
             console.log(data, "___________________")
@@ -118,17 +137,21 @@ const Homescreen = () => {
 
 
 
+
     React.useEffect(() => {
         settext(textfield);
         setdt(textfield);
+
     }, [textfield])
 
     React.useEffect(() => {
         setsubmitted(submitted);
         if (textfield != "") {
             sendchat(textfield);
+            var el=document.getElementById("inputtext");
+            el.value="";
+    
         }
-
     }, [submitted])
 
 
@@ -151,6 +174,7 @@ const Homescreen = () => {
         }
         temp1.push(obj);
         setchats(temp1);
+        
 
 
     }
@@ -186,7 +210,7 @@ const Homescreen = () => {
             <div className="chatblock" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "rgb(240,242,245)" }}>
                 <Chatbox chats={chathis} name={chatname} />
                 <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} >
-                    <input placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
+                    <input id ="inputtext" placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
                     <SendIcon onClick={() => { setsubmitted(!(submitted)) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
 
                 </div>
@@ -217,8 +241,8 @@ const Homescreen = () => {
         return tiles;
     }
     return (
-        <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", paddingTop: "50px", paddingBottom: "50px", paddingLeft: "100px", paddingRight: "100px" }}>
-            <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "100px", background: "rgb(0,168,132)" }}>
+        <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding:"0px" }}>
+            <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
                     <div className="emailfield">
                         <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setchat(e.target.value) }}></input>
@@ -231,7 +255,7 @@ const Homescreen = () => {
                 </div>
             </div>
 
-            <div className="cont" style={{ height: "100%", margin: 0, display: "flex", flexDirection: "row", background: "white", pading: "0px", justifyContent: "center", width: "100%", padding: 0 }}>
+            <div className="cont" style={{ height: "88%", margin: 0, display: "flex", flexDirection: "row", background: "white", pading: "0px", justifyContent: "center", width: "100%", padding: 0 }}>
 
                 <div className="card" style={{ "width": "30%" }}>
                     <ul className="list-group list-group-flush">

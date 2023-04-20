@@ -23,20 +23,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
 parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
-#need to  Store in a different way -------------------
-args.server="10.1.39.116"
+if(args.server==None):
+    args.server="10.1.39.116"
+if(args.port_no==None):
+    args.port_no=5000
+
+
+
+
+HOST=None
 PORT=5000
-
-
-conn = MongoClient("localhost",27017)
-db = conn.users
-
-
-HOST="10.1.39.116"
 try:
     if(args.server==None):
         raise ValueError
-    PORT=int(PORT)
+    if(args.port_no!=None):
+        PORT=int(args.port_no)
+    if(args.server!=None):
+        HOST=args.server
 except :
     print(f"Failed to connect")
 
@@ -54,8 +57,8 @@ global current_outgoing_conns
 current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
 DB_URL = "http://10.1.39.116:8080/server_map"
-
-
+conn = MongoClient("localhost",27017)
+db = conn.users
 
 @app.after_request
 def after_request(response):
@@ -149,5 +152,28 @@ def fetchchat():
     return {"chats":chats["history"]}
 
 
+@app.route("/userdata",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def userdata():
+    data=json.loads(request.data);
+    print(request.data);
+    email=data["email"]
+    res=db.chats.find({"chatname": { "$in": [email] } })
+    contacts=[]
+    lastmessage=[]
+    for i in res:
+        cont=i["chatname"][0]
+        if(i["chatname"][0]==email):
+            cont=i["chatname"][1]
+        if(cont!=""):
+            contacts.append(cont)
+            lastmessage.append(i["history"][-1]["msg"])
+    print(lastmessage,contacts)
+    # lastmessage.reverse()
+    # contacts.rev
+    return {"lastmessage":lastmessage[::-1],"contacts":contacts[::-1]}
+
+
+
 if __name__ == '__main__':
-    socketio.run(app,port=5000,host="10.1.39.116")
+    socketio.run(app,port=PORT,host=HOST)

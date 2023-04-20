@@ -5,10 +5,6 @@
     align-content: flex-end;
     justify-content: flex-end
 }
-.cont{
-    max-height: 85vh;
-}
-
 .card{
     width:30%
 }
