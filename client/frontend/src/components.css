@@ -35,6 +35,8 @@
     max-width: 35%;
     width: fit-content;
     padding: 10px 30px;
+    overflow-wrap: anywhere;
+    text-align: start
 
 }
 
@@ -54,4 +56,12 @@
 
 textarea:focus, input:focus{
     outline: none;
+}
+
+.lastmessage{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 200px;
+    text-align:left;
 }

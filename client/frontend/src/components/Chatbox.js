@@ -27,7 +27,7 @@ const Chatbox = (props) => {
     }
     React.useEffect(() => {
         var messageBody = document.getElementById('scrollbar');
-        console.log(messageBody, "************************************************************")
+        // console.log(messageBody, "************************************************************")
         messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
 
 

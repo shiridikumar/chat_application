@@ -23,7 +23,7 @@ const Tiles = (props) => {
                         <Avatar style={{pointerEvents:"none"}} src="../images/img.jpg" />
                         <div id={props.name + "_chat"} className="tile" style={{ display: "flex", "flexDirection": "column", alignItems: "flex-start", justifyContent: "center", marginLeft: "20px" }}>
                             <h6   >{props.name}</h6>
-                            <p style={{ margin: 0 }}>{props.last}</p>
+                            <p className="lastmessage" style={{ margin: 0 }}>{props.last}</p>
 
 
                         </div>

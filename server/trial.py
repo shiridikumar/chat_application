@@ -1,3 +1,4 @@
+from multiprocessing import connection
 import eventlet
 import gevent
 import socketio
@@ -59,7 +60,8 @@ server_name=HOST+":"+str(PORT)
 DB_URL = "http://10.1.39.116:8080/server_map"
 conn = MongoClient("localhost",27017)
 db = conn.users
-
+global connection_objects
+connection_objects={}
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
@@ -84,11 +86,15 @@ def send_msg(client_id, from_id,msg,to,server):
 
 
 
-def recv_msg(conn,m):
-    socketio.emit("message",{"akanksha":"i love u shiridi , u can do it "},room=conn)
-    # global redirection_server,connection_objects
-    # if(m["msg"]=="CONNECT_MSG"):
-    #     connection_objects[m["_id"]]=conn
+def recv_msg(m,email,sid):
+    # socketio.emit("message",{"akanksha":"i love u shiridi , u can do it "},room=conn)
+    global redirection_server,connection_objects
+    print(connection_objects,"****************")
+    if(email in connection_objects):
+        socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
+    print(email)
+    
+
     # elif(m["msg"]=="SERVER_CONNECT_MSG"):
     #     current_outgoing_conns[server_name]=[]
     # else:
@@ -119,7 +125,8 @@ def recv_msg(conn,m):
 @socketio.on('message')
 @cross_origin(supports_credentials=True,origin='*')
 def handle_message(data):
-    # recv_msg(request.sid,data)
+    recv_msg(data,data["to"],request.sid)
+    print(request.sid,"_______________")
     print(data)
     from_=data["from"]
     to=data["to"]
@@ -138,10 +145,19 @@ def handle_message(data):
     
 
 
+@socketio.on('connectclient')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_connect(data):
+    global connection_objects
+    connection_objects[data["email"]]=request.sid
+    return {"200":"2000"}
+
+
 @app.route("/fetchchat",methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')
 def fetchchat():
     data =json.loads(request.data)
+    # print(request.sid,"_______________")
     print(data,"*************")
     user=data["user"]
     chat=data["chat"]
