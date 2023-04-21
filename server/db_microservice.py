@@ -21,9 +21,9 @@ CORS(app,support_credentials=True)
 
 conn = MongoClient("localhost",27017)
 db = conn.users
-collection = db.server_mapping
+# db.server_mapping = db.server_mapping
 servers=["server1","server2"]
-server_addr={"server1":"10.1.39.116:5000","server2":"10.1.39.116:5050"}
+server_addr={"server1":"10.42.0.24:5050","server2":"10.42.0.208:5050"}
 consistent_hashing = ConsistentHashing(servers)
 
 @app.after_request
@@ -41,11 +41,17 @@ def signin():
     user=db.users.find_one({"email":email})
     if(user==None):
         db.users.insert_one({"email":email,"password":password,"chats":[]})
+        user=db.users.find_one({"email":email})
+        serv=consistent_hashing.get_server(str(user["_id"]))
+        print(serv,"________________________")
+        db.server_mapping.insert_one({"email":email,"server":server_addr[serv],"server_name":serv})
     else:
         print(user)
-    user=db.users.find_one({"email":email})
-    serv=consistent_hashing.get_server(str(user["_id"]))
-    db.server_mapping.insert_one({"email":email,"server":server_addr[serv],"server_name":serv})
+        user=db.users.find_one({"email":email})
+        serv=consistent_hashing.get_server(str(user["_id"]))
+        print(serv,"________________________")
+        { "$set": { 'server':server_addr[serv] ,'server_name':serv} }
+        db.server_mapping.find_one_and_update({"email":email}, { "$set": { 'server':server_addr[serv] ,'server_name':serv} })
     res=db.chats.find({"chatname": { "$in": [email] } })
     contacts=[]
     lastmessage=[]
@@ -80,7 +86,8 @@ def server_map():
     data=json.loads(data)
     print(data)
     if(data["msg"]!="CONNECT_MSG"):
-        user=collection.find_one({"email":data["to"]})
+        user=db.server_mapping.find_one({"email":data["to"]})
+        print(user,",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,")
         if(user):
             user["_id"]=str(user["_id"])
         else:
@@ -89,10 +96,13 @@ def server_map():
             user["_id"]=str(user["_id"])
             serv=consistent_hashing.get_server(str(user["_id"]))
             db.server_mapping.insert_one({"email":data["to"],"server":server_addr[serv],"server_name":serv})
-            user=collection.find_one({"email":data["to"]})
+            user=db.server_mapping.find_one({"email":data["to"]})
             user["_id"]=str(user["_id"])
+        
+        print(user,",,,,,,,,,,,,,,,")
         return user
     return {1:1}
+
 
 
 @app.route("/fetchchat",methods=["POST"])

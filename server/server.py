@@ -86,15 +86,17 @@ def find_key(sid):
 
 def recv_msg(m,email):
     global redirection_server,connection_objects,current_outgoing_conns
-    # print(connection_objects,"****************")
+    print(connection_objects,"****************")
+    
     if(email in connection_objects):
+        print("already present in connection objects")
         socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
 
     else:
         # print(m,"*******************************")
         r = requests.post(url=DB_URL, data=json.dumps(m))
         data = r.json()
-        print(data,"__________________________")
+        print("***********************",data,"__________________________")
 
         if(data["server"]!=server_name):
             ob={"data":m,"from_server":server_name}
@@ -130,8 +132,8 @@ def handle_disconnect():
 def handle_message(data):
     global updated_chats
     recv_msg(data,data["to"])
-    print(request.sid,"_______________")
-    print(data)
+    # print(request.sid,"_______________")
+    # print(data)
     from_=data["from"]
     to=data["to"]
     chatname=sorted([from_,to])
@@ -162,7 +164,7 @@ def handle_connect(data):
 @cross_origin(supports_credentials=True,origin='*')
 def fetchchat():
     data =json.loads(request.data)
-    print(data,"*************")
+    # print(data,"*************")
     user=data["user"]
     chat=data["chat"]
     chatname=sorted([user,chat])
@@ -178,6 +180,7 @@ def send_from_server():
     global updated_chats
     data=json.loads(request.data)
     from_server=data["from_server"].split(":")[0]
+    print(data,"+++++++++++++++++++++++++++")
     data=data["data"]
     recv_msg(data,data["to"])
     if(from_server!=HOST):
