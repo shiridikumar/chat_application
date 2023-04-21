@@ -18,8 +18,12 @@ import requests
 import pymongo
 from pymongo import MongoClient
 import socket
+import os
 import argparse
 import threading
+from dotenv import load_dotenv
+load_dotenv()
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
@@ -29,9 +33,6 @@ if(args.server==None):
     args.server="10.1.39.116"
 if(args.port_no==None):
     args.port_no=5000
-
-
-
 
 HOST=None
 PORT=5000
@@ -49,7 +50,6 @@ else:
     print("Server {} ,Listening to PORT {} ...".format(HOST,PORT),"succesful")
 
 
-
 app=Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app,support_credentials=True)
@@ -58,8 +58,9 @@ HEADER=64
 global current_outgoing_conns
 current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
+CENTRAL_SERVER=os.getenv("CENTRAL_SERVER")
 DB_URL = "http://10.1.39.116:8080/server_map"
-# SEND_TO_SERVER= "http://10.1.39.116:8080/server_map"
+
 conn = MongoClient("localhost",27017)
 db = conn.users
 global connection_objects
@@ -79,11 +80,7 @@ def recv_msg(m,email):
     print(connection_objects,"****************")
     if(email in connection_objects):
         socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
-    # print(email)
-    
 
-    # elif(m["msg"]=="SERVER_CONNECT_MSG"):
-    #     current_outgoing_conns[server_name]=[]
     else:
         print(m,"*******************************")
 
@@ -99,6 +96,12 @@ def recv_msg(m,email):
     return True
 
 
+@socketio.on('disconnect')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_disconnect():
+
+    print(request.sid,"_______________","Disconnected")
+    return {200:2000}
 
 
 @socketio.on('message')
@@ -136,7 +139,6 @@ def handle_connect(data):
 @cross_origin(supports_credentials=True,origin='*')
 def fetchchat():
     data =json.loads(request.data)
-    # print(request.sid,"_______________")
     print(data,"*************")
     user=data["user"]
     chat=data["chat"]
@@ -162,6 +164,8 @@ def send_from_server():
     else:
         chathis={"history":[data],"chatname":chatname}
         db.chats.insert_one(chathis)
+    
+    return {2000:2000}
 
 
 @app.route("/userdata",methods=["POST"])
