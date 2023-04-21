@@ -1,3 +1,4 @@
+from locale import D_T_FMT
 from multiprocessing import connection
 import eventlet
 import gevent
@@ -58,6 +59,7 @@ global current_outgoing_conns
 current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
 DB_URL = "http://10.1.39.116:8080/server_map"
+# SEND_TO_SERVER= "http://10.1.39.116:8080/server_map"
 conn = MongoClient("localhost",27017)
 db = conn.users
 global connection_objects
@@ -68,54 +70,31 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
 
-def communicate_with_server(conn,addr):
-    send_msg(conn,0,"SERVER_CONNECT_MSG",0,server_name)
-    while(1):
-        for i in range(len(current_outgoing_conns[addr])):
-            send_msg(conn,current_outgoing_conns[addr][i]["from"],current_outgoing_conns[addr][i]["msg"],current_outgoing_conns[addr][i]["_id"],current_outgoing_conns[addr][i]["server"])
-            print("************")
-        current_outgoing_conns[addr]=[]
-
-        
-def send_msg(client_id, from_id,msg,to,server):
-    if(server==""):
-        server=PORT
-    m = {"from": from_id, "msg": msg,"_id":to,"target":server}
-    socketio.emit('output', m, room=client_id)
-    print("sending message to client {}".format(client_id))
 
 
 
-def recv_msg(m,email,sid):
+def recv_msg(m,email):
     # socketio.emit("message",{"akanksha":"i love u shiridi , u can do it "},room=conn)
-    global redirection_server,connection_objects
+    global redirection_server,connection_objects,current_outgoing_conns
     print(connection_objects,"****************")
     if(email in connection_objects):
         socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
-    print(email)
+    # print(email)
     
 
     # elif(m["msg"]=="SERVER_CONNECT_MSG"):
     #     current_outgoing_conns[server_name]=[]
-    # else:
-    #     r = requests.post(url=DB_URL, data=m)
-    #     data = r.json()
-    #     data["msg"]=m["msg"]
-    #     m["server"]=data["server"]
-    #     if(data["server"]!=server_name):
-    #         if(data["server"] not in current_outgoing_conns):
-    #             newconn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #             ip,port=data["server"].split(":")[0],int(data["server"].split(":")[1])
-    #             newconn.connect((ip,port))
-    #             current_outgoing_conns.update({data["server"]:[m]})
-    #             print("in another server")
-    #             thread = threading.Thread(target=communicate_with_server, args=(newconn,data["server"]))
-    #             thread.start()
-    #         else:
-    #             current_outgoing_conns[data["server"]].append(m)
-        
-    #     else:
-    #         send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
+    else:
+        print(m,"*******************************")
+
+        r = requests.post(url=DB_URL, data=json.dumps(m))
+        data = r.json()
+
+        if(data["server"]!=server_name):
+            req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(m))
+        # else:
+
+        #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
         
     return True
 
@@ -125,7 +104,7 @@ def recv_msg(m,email,sid):
 @socketio.on('message')
 @cross_origin(supports_credentials=True,origin='*')
 def handle_message(data):
-    recv_msg(data,data["to"],request.sid)
+    recv_msg(data,data["to"])
     print(request.sid,"_______________")
     print(data)
     from_=data["from"]
@@ -168,6 +147,23 @@ def fetchchat():
     return {"chats":chats["history"]}
 
 
+@app.route("/send_from_server",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def send_from_server():
+    data=json.loads(request.data)
+    recv_msg(data,data["to"])
+    from_=data["from"]
+    to=data["to"]
+    chatname=sorted([from_,to])
+    chathis=db.chats.find_one({"chatname":chatname})
+    if(chathis!=None):
+        chathis["history"].append(data)
+        db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+    else:
+        chathis={"history":[data],"chatname":chatname}
+        db.chats.insert_one(chathis)
+
+
 @app.route("/userdata",methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')
 def userdata():
@@ -184,7 +180,7 @@ def userdata():
         if(cont!=""):
             contacts.append(cont)
             lastmessage.append(i["history"][-1]["msg"])
-    print(lastmessage,contacts)
+    print(lastmessage,contacts) 
     # lastmessage.reverse()
     # contacts.rev
     return {"lastmessage":lastmessage[::-1],"contacts":contacts[::-1]}

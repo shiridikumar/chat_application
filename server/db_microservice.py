@@ -65,12 +65,13 @@ def signin():
 @cross_origin(supports_credentials=True,origin='*')
 def server_map():
     data=request.data
-    # print(data)
+    print(request)
     data=json.loads(data)
     print(data)
     if(data["msg"]!="CONNECT_MSG"):
-        user=collection.find_one({"_id":ObjectId(data["_id"])})
+        user=collection.find_one({"email":data["to"]})
         user["_id"]=str(user["_id"])
+        print(user)
         return user
     return {1:1}
 

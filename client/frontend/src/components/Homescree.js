@@ -19,6 +19,7 @@ const Homescreen = () => {
     // const [sock,setsocket]=React.useState();
     const sock = React.useRef(0);
     const currhis = React.useRef();
+    console.log("Connected to server ",server_details.server,"********************************")
 
     const update_list = (from, last, currchats, currlastchat) => {
         console.log(currchats, currlastchat, "________________")
