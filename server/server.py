@@ -4,12 +4,12 @@ import json
 import sys
 import requests
 import argparse
-HOST = "10.1.39.116"
+HOST = "172.18.0.1"
 
 ## if central_server run with PORT =10000
 PORT = 5000
 HEADER = 64
-DB_URL = "http://10.1.39.116:8080/server_map"
+DB_URL = "http://172.18.0.1:8080/server_map"
 
 global redirection_server
 
@@ -18,7 +18,7 @@ parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
 parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
 #need to  Store in a different way -------------------
-args.server="10.1.39.116"
+args.server="172.18.0.1"
 global connection_objects
 connection_objects={}
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

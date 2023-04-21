@@ -2,6 +2,7 @@ import eventlet
 import gevent
 import socketio
 from flask_socketio import SocketIO
+from flask_socketio import join_room, leave_room    
 from http.client import responses
 import json
 import flask
@@ -24,15 +25,15 @@ parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
 parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
 #need to  Store in a different way -------------------
-args.server="10.1.39.116"
-PORT=5000
+args.server="172.18.0.1"
+PORT=5050
 
 
 conn = MongoClient("localhost",27017)
 db = conn.users
 
 
-HOST="10.1.39.116"
+HOST="172.18.0.1"
 try:
     if(args.server==None):
         raise ValueError
@@ -53,7 +54,7 @@ HEADER=64
 global current_outgoing_conns
 current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
-DB_URL = "http://10.1.39.116:8080/server_map"
+DB_URL = "http://172.18.0.1:8080/server_map"
 
 
 
@@ -99,7 +100,7 @@ def recv_msg(conn,m):
     #             ip,port=data["server"].split(":")[0],int(data["server"].split(":")[1])
     #             newconn.connect((ip,port))
     #             current_outgoing_conns.update({data["server"]:[m]})
-    #             print("in another server")
+    #             print("in another server")Notifications
     #             thread = threading.Thread(target=communicate_with_server, args=(newconn,data["server"]))
     #             thread.start()
     #         else:
@@ -109,8 +110,6 @@ def recv_msg(conn,m):
     #         send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
         
     return True
-
-
 
 
 @socketio.on('message')
@@ -149,5 +148,49 @@ def fetchchat():
     return {"chats":chats["history"]}
 
 
+#-----------------Group chat---------------------
+
+@socketio.on('join')
+def on_join(data):
+    username = data['username']
+    room = data['room']
+    join_room(room)
+    send(username + ' has entered the room.', to=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    room = data['room']
+    leave_room(room)
+    send(username + ' has left the room.', to=room)
+
+@socketio.on('grpmessage')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_message(data):
+    # recv_msg(request.sid,data)
+    print(data)
+    grpid=data["grpid"]
+    grp=db.grp.find_one({"grpid":grpid})
+    if(grp!=None):
+        grp["history"].append(data)
+        db.grp.update_one({"grpid":grpid},{ "$set": { 'history': grp["history"] } })
+    else:
+        return {"Group not found":"404"}
+    
+    return {"success":"200"}
+
+@app.route("/fetchgrp", methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def fetchgrp():
+    data =json.loads(request.data)
+    print(data,"###############")
+    user=data["user"]
+    grp=data["grp"]
+    chats=db.grp.find_one({"grpname":grp})
+    if(chats==None):
+        chats={"history":[]}
+    return {"chats":chats["history"]}
+
+
 if __name__ == '__main__':
-    socketio.run(app,port=5000,host="10.1.39.116")
+    socketio.run(app,port=PORT,host=HOST)

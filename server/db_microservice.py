@@ -23,7 +23,7 @@ conn = MongoClient("localhost",27017)
 db = conn.users
 collection = db.server_mapping
 servers=["server1","server2"]
-server_addr={"server1":"10.1.39.116:5000","server2":"10.1.39.116:5050"}
+server_addr={"server1":"172.18.0.1:5000","server2":"172.18.0.1:5050"}
 consistent_hashing = ConsistentHashing(servers)
 
 @app.after_request
@@ -88,4 +88,4 @@ def fetchchat():
 
 
 if __name__=="__main__":
-    app.run(debug=True,port=8080,host="10.1.39.116")
+    app.run(debug=True,port=8080,host="172.18.0.1")

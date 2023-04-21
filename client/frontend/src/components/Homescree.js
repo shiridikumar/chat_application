@@ -18,7 +18,7 @@ const Homescreen = () => {
 
 
     React.useEffect(() => {
-        const socket = io(`ws://10.1.39.116:5000`);
+        const socket = io(`ws://172.18.0.1:5000`);
 
         socket.on('message', function (data) {
             console.log(data, "___________________")

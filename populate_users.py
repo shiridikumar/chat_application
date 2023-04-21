@@ -18,7 +18,7 @@ maps=[5050,5050,5000,5000]
 collection.delete_many({})
 ind=0
 for i in users:
-    collection.insert_one({"name":i,"server":"10.1.39.116:"+str(maps[ind])})
+    collection.insert_one({"name":i,"server":"172.18.0.1:"+str(maps[ind])})
     ind+=1
 	
 

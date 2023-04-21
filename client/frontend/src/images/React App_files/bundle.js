@@ -309,7 +309,7 @@ const Homescreen = () => {
   const lastchat = server_details.last;
   let socket;
   react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
-    socket = (0,socket_io_client__WEBPACK_IMPORTED_MODULE_3__.io)(`ws://10.1.39.116:5000`);
+    socket = (0,socket_io_client__WEBPACK_IMPORTED_MODULE_3__.io)(`ws://172.18.0.1:5000`);
     socket.on('message', function (data) {
       console.log(data, "___________________");
     });
@@ -910,7 +910,7 @@ function Signin() {
       "email": user,
       "password": password
     };
-    axios__WEBPACK_IMPORTED_MODULE_5__["default"].post("http://10.1.39.116:8080/signin", data, {
+    axios__WEBPACK_IMPORTED_MODULE_5__["default"].post("http://172.18.0.1:8080/signin", data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
