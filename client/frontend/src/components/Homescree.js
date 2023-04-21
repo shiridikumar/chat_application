@@ -10,28 +10,108 @@ const Homescreen = () => {
     const tiles = []
     const location = useLocation();
     const server_details = location.state.data;
-    const chats = server_details.contacts
-    const lastchat = server_details.last
+    const [chats, setcontacts] = React.useState([]);
+    const [lastchat, setlastchat] = React.useState([]);
+    const [recv, setrecv] = React.useState(false);
+    const currcont = React.useRef();
+    const currlast = React.useRef();
+    const currname = React.useRef();
     // const [sock,setsocket]=React.useState();
     const sock = React.useRef(0);
+    const currhis = React.useRef();
+    console.log("Connected to server ",server_details.server,"********************************")
+
+    const update_list = (from, last, currchats, currlastchat) => {
+        console.log(currchats, currlastchat, "________________")
+        let flag = 0;
+        let ind = -1;
+        for (var i = 0; i < currchats.length; i++) {
+            if (currchats[i] == from) {
+                flag = 1;
+                ind = i;
+                break
+            }
+        }
+        const temp = []
+        const temp2 = []
+        if (flag == 0) {
+            temp.push(from);
+            temp2.push(last);
+        }
+
+
+
+        for (var i = 0; i < currchats.length; i++) {
+            if (i == ind) {
+                temp2.push(last);
+                temp.push(currchats[i]);
+                break;
+            }
+        }
+        for (var i = 0; i < currchats.length; i++) {
+            if (i != ind) {
+                temp2.push(currlastchat[i]);
+                temp.push(currchats[i]);
+            }
+        }
+        console.log("updating ra wolfa **************")
+        setlastchat(temp2);
+        setcontacts(temp);
+    }
 
 
 
     React.useEffect(() => {
-        const socket = io(`ws://172.18.0.1:5000`);
+        const socket = io(`ws://${server_details.server}`);
 
-        socket.on('message', function (data) {
-            console.log(data, "___________________")
-        });
+        axios.post(`http://${server_details.server}/userdata`, { email: server_details.user }, {
+            headers: {
+
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+                'Content-Type': "application/json",
+            }
+
+        }).then(response => {
+            console.log(response.data);
+            setcontacts(response.data.contacts);
+            setlastchat(response.data.lastmessage);
+            //   response.data["user"]=user
+            //   navigate("/home",{state:{data:response.data}})
+        })
         sock.current = socket;
+        sock.current.emit("connectclient", { "email": server_details.user })
+        sock.current.on('message', function (data) {
+            console.log(data, "___________________", currcont.current, currlast.current)
+            setrecv(!(recv));
+            update_list(data["from"], data["msg"], currcont.current, currlast.current);
+            if (currname.current == data["from"]) {
+                const temp = []
+                console.log(currhis.current, "************************")
+                for (var i = 0; i < currhis.current.length; i++) {
+                    temp.push(currhis.current[i]);
+                }
+                temp.push(data);
+                setchats(temp);
+            }
 
-        // setsocket(socket);
+        });
+
     }, [])
 
-    // React.useEffect(()=>{
-    //     // setsocket(sock);
-    //     console.log(sock,":::::::::::::::::");
-    // },[sock])
+
+
+    React.useEffect(() => {
+        setrecv(recv);
+        setlastchat(lastchat);
+        setcontacts(chats);
+        currcont.current = chats
+        currlast.current = lastchat
+        console.log(chats, lastchat)
+    }, [chats, lastchat, recv])
+
+
+
 
 
     const chatnameref = React.useRef();
@@ -60,12 +140,14 @@ const Homescreen = () => {
 
     React.useEffect(() => {
         setchat(chatname);
+
     }, [chatname])
 
     React.useEffect(() => {
         setclick(chatclick)
         console.log(chatclick);
         setchat(chatname);
+        currname.current = chatname;
         if (chatname != "" && chatname) {
             const chat = showchat(chatname);
             setchatbox(chat);
@@ -75,24 +157,49 @@ const Homescreen = () => {
     React.useEffect(() => {
         if (chatname != "" && chatname) {
             setchats(chathis);
+            currhis.current = chathis
             const temp = getchat()
             setchatui(temp);
+
         }
     }, [chathis])
+
+
+    React.useEffect(() => {
+        setchatui(chatui);
+        var messageBody = document.getElementById('scrollbar');
+        if (messageBody) {
+            // console.log(messageBody, "************************************************************")
+            messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
+            // console.log(messageBody.scrollTop, "==============================")
+        }
+
+
+
+    }, [chatui])
+
 
 
 
     React.useEffect(() => {
         settext(textfield);
         setdt(textfield);
+
     }, [textfield])
 
     React.useEffect(() => {
         setsubmitted(submitted);
         if (textfield != "") {
-            sendchat(textfield);
+            var el = document.getElementById("inputtext");
+            if(el.value!=""){
+                sendchat(textfield);
+            }
+            // var el = document.getElementById("inputtext");
+            el.value = "";
+            // var el = document.getElementById("inputtext");
+            // if(el){
+            // el.value = "";
         }
-
     }, [submitted])
 
 
@@ -106,13 +213,16 @@ const Homescreen = () => {
         // console.log(sock);
         const res = sock.current.emit('message', obj)
         const temp = [];
+        update_list(obj["to"], obj["msg"], chats, lastchat);
+        const temp1 = [];
         if (chathis) {
             for (var i = 0; i < chathis.length; i++) {
-                temp.push(chathis[i]);
+                temp1.push(chathis[i]);
             }
         }
-        temp.push(obj);
-        setchats(temp);
+        temp1.push(obj);
+        setchats(temp1);
+
 
 
     }
@@ -148,7 +258,7 @@ const Homescreen = () => {
             <div className="chatblock" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "rgb(240,242,245)" }}>
                 <Chatbox chats={chathis} name={chatname} />
                 <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} >
-                    <input placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
+                    <input id="inputtext" placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
                     <SendIcon onClick={() => { setsubmitted(!(submitted)) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
 
                 </div>
@@ -179,8 +289,8 @@ const Homescreen = () => {
         return tiles;
     }
     return (
-        <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", paddingTop: "50px", paddingBottom: "50px", paddingLeft: "100px", paddingRight: "100px" }}>
-            <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "100px", background: "rgb(0,168,132)" }}>
+        <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
+            <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
                     <div className="emailfield">
                         <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setchat(e.target.value) }}></input>
@@ -193,7 +303,7 @@ const Homescreen = () => {
                 </div>
             </div>
 
-            <div className="cont" style={{ height: "100%", margin: 0, display: "flex", flexDirection: "row", background: "white", pading: "0px", justifyContent: "center", width: "100%", padding: 0 }}>
+            <div className="cont" style={{ height: "88%", margin: 0, display: "flex", flexDirection: "row", background: "white", pading: "0px", justifyContent: "center", width: "100%", padding: 0 }}>
 
                 <div className="card" style={{ "width": "30%" }}>
                     <ul className="list-group list-group-flush">

@@ -61,16 +61,36 @@ def signin():
 
 
 
+@app.route("/backup_data",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def backup_data():
+    data=request.data
+    data=json.loads(data)["updated"]
+    for i in data:
+        doc=db.chats.find_one_and_update({"chatname":i["chatname"]},{ "$set": { 'history': i["history"] } })
+    print(data,"___________________________")
+    return {200:200}
+
+
 @app.route("/server_map",methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')
 def server_map():
     data=request.data
-    # print(data)
+    print(request)
     data=json.loads(data)
     print(data)
     if(data["msg"]!="CONNECT_MSG"):
-        user=collection.find_one({"_id":ObjectId(data["_id"])})
-        user["_id"]=str(user["_id"])
+        user=collection.find_one({"email":data["to"]})
+        if(user):
+            user["_id"]=str(user["_id"])
+        else:
+            db.users.insert_one({"email":data["to"],"password":"password","chats":[]})
+            user=db.users.find_one({"email":data["to"]})
+            user["_id"]=str(user["_id"])
+            serv=consistent_hashing.get_server(str(user["_id"]))
+            db.server_mapping.insert_one({"email":data["to"],"server":server_addr[serv],"server_name":serv})
+            user=collection.find_one({"email":data["to"]})
+            user["_id"]=str(user["_id"])
         return user
     return {1:1}
 
