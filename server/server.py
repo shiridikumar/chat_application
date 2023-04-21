@@ -1,144 +1,223 @@
-import socket
-import threading
+from locale import D_T_FMT
+from multiprocessing import connection
+import eventlet
+import gevent
+import socketio
+from flask_socketio import SocketIO
+from http.client import responses
 import json
-import sys
+import flask
+from flask import Flask,redirect, url_for, request,render_template,send_file,jsonify
+import werkzeug
+from werkzeug.utils import secure_filename
+from flask import Flask, Response
+from flask_cors import CORS,cross_origin
+from flask import send_from_directory
+from bson import ObjectId
 import requests
+import pymongo
+from pymongo import MongoClient
+import socket
+import os
 import argparse
-HOST = "10.1.39.116"
+import threading
+from dotenv import load_dotenv
+load_dotenv()
 
-## if central_server run with PORT =10000
-PORT = 5000
-HEADER = 64
-DB_URL = "http://10.1.39.116:8080/server_map"
-
-global redirection_server
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
 parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
-#need to  Store in a different way -------------------
-args.server="10.1.39.116"
-global connection_objects
-connection_objects={}
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-if(args.port_no!=None):
-    PORT=args.port_no
+if(args.server==None):
+    args.server="10.1.39.116"
+if(args.port_no==None):
+    args.port_no=5000
 
-global current_outgoing_conns
-current_outgoing_conns={}
-
-def log(statement,value=""):
-    print(f"[ {statement} ]",end=" ")
-    if(value!=""):
-        print(f": {value}",end="")
-    print()
-
+HOST=None
+PORT=5000
 try:
     if(args.server==None):
         raise ValueError
-    if(args.port_no==None):
-        log("Trying to Bind to default port ")
-    else:
-        log(f"Trying to Bind to PORT :{PORT}")
-    PORT=int(PORT)
-    server.bind((HOST, PORT))
+    if(args.port_no!=None):
+        PORT=int(args.port_no)
+    if(args.server!=None):
+        HOST=args.server
 except :
-    log(f"Failed to connect")
+    print(f"Failed to connect")
 
 else:
-    log("Server {} ,Listening to PORT {} ...".format(HOST,PORT),"succesful")
+    print("Server {} ,Listening to PORT {} ...".format(HOST,PORT),"succesful")
 
+
+app=Flask(__name__)
+app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app,support_credentials=True)
+socketio = SocketIO(app, cors_allowed_origins="*",async_handlers=True, pingTimeout=900)
+HEADER=64
+global current_outgoing_conns
+current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
+CENTRAL_SERVER=os.getenv("CENTRAL_SERVER")
+DB_URL = "http://10.1.39.116:8080/server_map"
 
 
-def communicate_with_server(conn,addr):
-    send_msg(conn,0,"SERVER_CONNECT_MSG",0,server_name)
-    while(1):
-        for i in range(len(current_outgoing_conns[addr])):
-            send_msg(conn,current_outgoing_conns[addr][i]["from"],current_outgoing_conns[addr][i]["msg"],current_outgoing_conns[addr][i]["_id"],current_outgoing_conns[addr][i]["server"])
-            print("************")
-        current_outgoing_conns[addr]=[]
+global updated_chats
+updated_chats={}
 
-            
-
-def send_msg(conn, from_id, msg,to,server=""):
-    if(server==""):
-        server=PORT
-    m = {"from": from_id, "msg": msg,"_id":to,"target":server}
-    data = json.dumps(m)
-    message = bytes(data, encoding="utf-8")
-    length = len(message)
-    length = str(length).encode("utf-8")
-    length += b' ' * (HEADER - len(length))
-    # if(server==PORT and to!=1 and to!=2):
-
-    #     print(length,message,data,conn,connection_objects[to])
-    conn.send(length)
-    conn.send(message)
+conn = MongoClient("localhost",27017)
+db = conn.users
+global connection_objects
+connection_objects={}
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    return response
 
 
-def recv_msg(conn):
-    global redirection_server,connection_objects
-    length = conn.recv(HEADER).decode("utf-8")
 
-    if(length):
-        msg = conn.recv(int(length)).decode("utf-8")
 
-        m=json.loads(msg)
-        if(m["msg"]=="CONNECT_MSG"):
-            connection_objects[m["_id"]]=conn
-        elif(m["msg"]=="SERVER_CONNECT_MSG"):
-            current_outgoing_conns[server_name]=[]
-        else:
-            r = requests.post(url=DB_URL, data=msg)
-            data = r.json()
-            data["msg"]=m["msg"]
-            m["server"]=data["server"]
-            if(data["server"]!=server_name):
-                if(data["server"] not in current_outgoing_conns):
-                    newconn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    ip,port=data["server"].split(":")[0],int(data["server"].split(":")[1])
-                    newconn.connect((ip,port))
-                    current_outgoing_conns.update({data["server"]:[m]})
-                    print("in another server")
-                    thread = threading.Thread(target=communicate_with_server, args=(newconn,data["server"]))
-                    thread.start()
-                else:
-                    current_outgoing_conns[data["server"]].append(m)
-            
-            else:
-                send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
-            
-        if(msg) == "exit":
-            return False
+def find_key(sid):
+    for i in connection_objects:
+        if(connection_objects[i]==sid):
+            return i
 
+
+def recv_msg(m,email):
+    global redirection_server,connection_objects,current_outgoing_conns
+    # print(connection_objects,"****************")
+    if(email in connection_objects):
+        socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
+
+    else:
+        # print(m,"*******************************")
+        r = requests.post(url=DB_URL, data=json.dumps(m))
+        data = r.json()
+        print(data,"__________________________")
+
+        if(data["server"]!=server_name):
+            ob={"data":m,"from_server":server_name}
+            req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
+        # else:
+
+        #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
+        
     return True
 
 
-def send_end(conn,adress):
-    send=send_msg(conn,2,"sending_from_server",1)
+@socketio.on('disconnect')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_disconnect():
+    global updated_chats
+    email=find_key(request.sid)
+    res=db.chats.find({"chatname": { "$in": [email] } },{"_id":0})
+    print(updated_chats)
+    upds=[]
+    for  i in res:
+        if tuple(i["chatname"]) in updated_chats:
+            # print(i["chatname"],"*************************************")
+            upds.append(i)
+    data={"updated":upds}
+    print(len(upds),"***************")
+    r = requests.post(url=CENTRAL_SERVER+str("/backup_data"),data=json.dumps(data))
+    print(request.sid,"_______________","Disconnected")
+    return {200:2000}
 
 
-def communicate(conn,address):
-    thread=threading.Thread(target=send_end, args=(conn, address))
-    thread.start()
-    while(1):
-        rec=recv_msg(conn)
-        if(rec==False):
-            break
-    conn.close()
+@socketio.on('message')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_message(data):
+    global updated_chats
+    recv_msg(data,data["to"])
+    print(request.sid,"_______________")
+    print(data)
+    from_=data["from"]
+    to=data["to"]
+    chatname=sorted([from_,to])
+    chathis=db.chats.find_one({"chatname":chatname})
+    updated_chats[tuple(chatname)]=1
+    if(chathis!=None):
+        chathis["history"].append(data)
+        db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+    else:
+        chathis={"history":[data],"chatname":chatname}
+        db.chats.insert_one(chathis)
+    
+    # socketio.emit("message",chathis,room=conn)
+
+    return {"success":"200"}
+    
 
 
-server.listen()
-
-while(1):
-    conn,address=server.accept()
-    thread = threading.Thread(target=communicate, args=(conn, address))
-    thread.start()
-
-
+@socketio.on('connectclient')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_connect(data):
+    global connection_objects
+    connection_objects[data["email"]]=request.sid
+    return {"200":"2000"}
 
 
+@app.route("/fetchchat",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def fetchchat():
+    data =json.loads(request.data)
+    print(data,"*************")
+    user=data["user"]
+    chat=data["chat"]
+    chatname=sorted([user,chat])
+    chats=db.chats.find_one({"chatname":chatname})
+    if(chats==None):
+        chats={"history":[]}
+    return {"chats":chats["history"]}
 
 
+@app.route("/send_from_server",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def send_from_server():
+    global updated_chats
+    data=json.loads(request.data)
+    from_server=data["from_server"].split(":")[0]
+    data=data["data"]
+    recv_msg(data,data["to"])
+    if(from_server!=HOST):
+        from_=data["from"]
+        to=data["to"]
+        chatname=sorted([from_,to])
+        chathis=db.chats.find_one({"chatname":chatname})
+        updated_chats[tuple(chatname)]=1
+        if(chathis!=None):
+            chathis["history"].append(data)
+            db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+        else:
+            chathis={"history":[data],"chatname":chatname}
+            db.chats.insert_one(chathis)
+        
+    return {2000:2000}
+
+
+@app.route("/userdata",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def userdata():
+    data=json.loads(request.data);
+    print(request.data);
+    email=data["email"]
+    res=db.chats.find({"chatname": { "$in": [email] } })
+    contacts=[]
+    lastmessage=[]
+    for i in res:
+        cont=i["chatname"][0]
+        if(i["chatname"][0]==email):
+            cont=i["chatname"][1]
+        if(cont!=""):
+            contacts.append(cont)
+            lastmessage.append(i["history"][-1]["msg"])
+    print(lastmessage,contacts) 
+    # lastmessage.reverse()
+    # contacts.rev
+    return {"lastmessage":lastmessage[::-1],"contacts":contacts[::-1]}
+
+
+
+if __name__ == '__main__':
+    socketio.run(app,port=PORT,host=HOST)
