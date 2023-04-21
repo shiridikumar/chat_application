@@ -93,7 +93,7 @@ def recv_msg(m,email):
         socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
 
     else:
-        # print(m,"*******************************")
+        # print(m,"*******************************"
         r = requests.post(url=DB_URL, data=json.dumps(m))
         data = r.json()
         print("***********************",data,"__________________________")
