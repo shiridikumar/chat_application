@@ -127,9 +127,6 @@ def recv_msg(m,email,ind):
             req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
         else:
             print("user offline *****************************")
-
-        #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
-        
     return True
 
 
@@ -398,24 +395,18 @@ def handle_message(data):
 
 def on_join(data,sid):
     email = data["from"]
-    join_room("shiridi")
+    join_room(data["grpid"])
     print("joined room",data["grpid"])
-
     db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":email}})
-    # send({"from":email,"msg":f'{email} has entered the room.'},room=data["grpid"])
-    socketio.emit("grpmessage",{"from":email,"msg":f'{email} has entered the room.'} , room="shiridi")
-    # print(ret,"******************")
+    socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.'} , room=data["grpid"])
+    ms=f'{email} has entered the room.'
+    db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":ms}}})
     print(data)
 
 @socketio.on('join')
 def join(data):
     if data["grpid"] == "":
-        print("creating group **************************************")
         data["grpid"]=db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
-        print(data["grpid"],"************")
-
-        # data["grpid"] = str(db.grp.find_one({"grpid":grpid})["_id"])   
-
     on_join(data,request.sid)
 
     return {"success":"200"}
