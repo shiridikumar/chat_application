@@ -23,7 +23,7 @@ conn = MongoClient("localhost", 27017)
 db = conn.users
 # db.server_mapping = db.server_mapping
 servers = ["server1"]  # ,"server2"]
-server_addr = {"server1": "10.1.39.116:5000"}  # ,"server2":"10.42.0.208:5050"}
+server_addr = {"server1":"10.42.0.37:5000"}
 consistent_hashing = ConsistentHashing(servers)
 
 

@@ -127,9 +127,6 @@ def recv_msg(m,email,ind):
             req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
         else:
             print("user offline *****************************")
-
-        #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
-        
     return True
 
 

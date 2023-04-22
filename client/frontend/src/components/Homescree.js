@@ -100,19 +100,22 @@ const Homescreen = () => {
         sock.current.on('delivered', function (data) {
             console.log(data, "___________________", currcont.current, currlast.current)
             const temp = []
-            console.log("deliver tick recieved doole mari",data.from,currname.current,data["chat_ind"],data["chat_ind"].length)
-            if (currname.current == data.from){
+            console.log("deliver tick recieved doole mari", data.from, currname.current, data["chat_ind"], data["chat_ind"].length)
+            if (currname.current == data.from) {
                 for (var i = 0; i < currhis.current.length; i++) {
                     temp.push(currhis.current[i])
                 }
 
                 for (var i = 0; i < data["chat_ind"].length; i++) {
-                    temp[data["chat_ind"][i]]["seen"]=1;
+                    temp[data["chat_ind"][i]]["seen"] = 1;
                 }
                 console.log(temp);
                 setchats(temp);
             }
-            
+            socket.on('connect_error', err => console.log("Server crashed *********************"))
+            socket.on('connect_failed', err => console.log("Server crashed *********************"))
+            socket.on('disconnect', err => console.log("Server crashed *********************"))
+
 
             // // setrecv(!(recv));
             // // update_list(data["from"], data["msg"], currcont.current, currlast.current);
@@ -126,7 +129,7 @@ const Homescreen = () => {
             //     setchats(temp);
             // }
 
-        });
+        })
 
 
     }, [])
@@ -254,7 +257,7 @@ const Homescreen = () => {
             "msg": msg,
             "to": chatname,
             "time": dformat,
-            "seen":0
+            "seen": 0
         }
 
         console.log(dformat, "??????????????????");
@@ -340,8 +343,8 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className='createGroup'>
-                <img src={require("../images/create-group.png")} style={{width:"60px", borderRadius: "10px", paddingTop:"20px"}}/>
-                {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
+                    <img src={require("../images/create-group.png")} style={{ width: "60px", borderRadius: "10px", paddingTop: "20px" }} />
+                    {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
 
                 </div>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
