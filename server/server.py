@@ -385,10 +385,10 @@ def handle_message(data):
     print(request.sid,"_______________")
     print(data)
     id = data["grpid"]
-    find_grp=db.chats.find_one({"grpid":id})
+    find_grp=db.grp.find_one({"_id":id})
     group_chats[id]=1
     if(find_grp!=None):
-        db.grp.update_one({"grpid":id},{"$push":{"history":data}})
+        db.grp.update_one({"_id":id},{"$push":{"history":data}})
 
     return {"success":"200"}
 
@@ -403,10 +403,11 @@ def on_join(data,sid):
     db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":ms}}})
     print(data)
 
+
 @socketio.on('join')
 def join(data):
     if data["grpid"] == "":
-        data["grpid"]=db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
+        data["grpid"]=db.grp.insert_one({"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
     on_join(data,request.sid)
 
     return {"success":"200"}
@@ -434,7 +435,10 @@ def on_leave(data):
 @cross_origin(supports_credentials=True,origin='*')
 def fetchgrp():
     data=json.loads(request.data)
+    print(data)
     id=data["grpid"]
+    id=id[6:]
+    print(id,"***********************")
     find_grp=db.grp.find_one({"_id":ObjectId(id)})
     if(find_grp==None):
         return {"history":[]}

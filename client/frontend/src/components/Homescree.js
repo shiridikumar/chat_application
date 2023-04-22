@@ -18,8 +18,30 @@ const Homescreen = () => {
     const currname = React.useRef();
     const [lastseen, setlastseen] = React.useState("");
     // const [sock,setsocket]=React.useState();
+    const initbox = () => {
+        return (
+            <div>
+                <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} />
+                <h6>Chat Web</h6>
+            </div>
+        )
+    }
     const sock = React.useRef(0);
     const currhis = React.useRef();
+    const [chatname, setchat] = React.useState("")
+    const initChatbox = initbox();
+    const [chatbox, setchatbox] = React.useState(initChatbox);
+    const [textfield, settext] = React.useState("");
+    const [submitted, setsubmitted] = React.useState(false);
+    const [dt, setdt] = React.useState("");
+    const navigate = useNavigate();
+    const HEADER = 64;
+    const [chathis, setchats] = React.useState();
+    const [chatui, setchatui] = React.useState(initChatbox);
+    const [chatclick, setclick] = React.useState(false);
+    const [grpid, setgrpid] = React.useState("");
+    const currgrp = React.useRef(0);
+
     console.log("Connected to server ", server_details.server, "********************************")
 
     const update_list = (from, last, currchats, currlastchat) => {
@@ -39,9 +61,6 @@ const Homescreen = () => {
             temp.push(from);
             temp2.push(last);
         }
-
-
-
         for (var i = 0; i < currchats.length; i++) {
             if (i == ind) {
                 temp2.push(last);
@@ -58,6 +77,11 @@ const Homescreen = () => {
         setlastchat(temp2);
         setcontacts(temp);
     }
+
+    React.useEffect(() => {
+        setgrpid(grpid);
+        currgrp.current = grpid;
+    }, [grpid])
 
     React.useEffect(() => {
         const socket = io(`ws://${server_details.server}`);
@@ -95,17 +119,17 @@ const Homescreen = () => {
         });
 
         sock.current.on("joingrp", function (data) {
-            const temp=["group "+data["grpid"]]
-            const temp1=[data["last"]]
-            for(var i=0;i<currcont.current.length;i++){
+            const temp = ["group " + data["grpid"]]
+            const temp1 = [data["last"]]
+            for (var i = 0; i < currcont.current.length; i++) {
                 temp.push(currcont.current[i]);
             }
-            for(var i=0;i<currlast.current.length;i++){
+            for (var i = 0; i < currlast.current.length; i++) {
                 temp1.push(currlast.current[i]);
             }
             setlastchat(temp1);
             setcontacts(temp);
-            console.log(data,"*******************",temp1,temp)
+            console.log(data, "*******************", temp1, temp)
         });
 
         sock.current.on('delivered', function (data) {
@@ -126,20 +150,6 @@ const Homescreen = () => {
             socket.on('connect_error', err => console.log("Server crashed *********************"))
             socket.on('connect_failed', err => console.log("Server crashed *********************"))
             socket.on('disconnect', err => console.log("Server crashed *********************"))
-
-
-            // // setrecv(!(recv));
-            // // update_list(data["from"], data["msg"], currcont.current, currlast.current);
-            // // if (currname.current == data["from"]) {
-            //     const temp = []
-            //     console.log(currhis.current, "************************")
-            //     for (var i = 0; i < currhis.current.length; i++) {
-            //         temp.push(currhis.current[i]);
-            //     }
-            //     temp.push(data);
-            //     setchats(temp);
-            // }
-
         })
 
 
@@ -161,28 +171,6 @@ const Homescreen = () => {
 
 
     const chatnameref = React.useRef();
-    const initbox = () => {
-        return (
-            <div>
-                <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} />
-                <h6>Chat Web</h6>
-            </div>
-        )
-    }
-    const initChatbox = initbox();
-
-    const [chatname, setchat] = React.useState("")
-    const [chatbox, setchatbox] = React.useState(initChatbox);
-    const [textfield, settext] = React.useState("");
-    const [submitted, setsubmitted] = React.useState(false);
-    const [dt, setdt] = React.useState("");
-    const navigate = useNavigate();
-    const HEADER = 64;
-    const [chathis, setchats] = React.useState();
-    const [chatui, setchatui] = React.useState(initChatbox);
-    const [chatclick, setclick] = React.useState(false);
-    const [grpid,setgrpid]=React.useState("");
-
 
 
     React.useEffect(() => {
@@ -195,9 +183,14 @@ const Homescreen = () => {
         console.log(chatclick);
         setchat(chatname);
         currname.current = chatname;
-        if (chatname != "" && chatname) {
-            const chat = showchat(chatname);
-            setchatbox(chat);
+        if ("group " == currname.current.slice(0, 6)) {
+            const hist=showgrp(currname.current);
+        }
+        else {
+            if (chatname != "" && chatname) {
+                const chat = showchat(chatname);
+                setchatbox(chat);
+            }
         }
     }, [chatclick])
 
@@ -285,8 +278,6 @@ const Homescreen = () => {
         temp1.push(obj);
         setchats(temp1);
 
-
-
     }
 
 
@@ -314,13 +305,13 @@ const Homescreen = () => {
             })
 
 
-            
+
 
 
     }
-    
-    const showgrp =()=>{
-           axios.post(`http://${server_details.server}/fetchgrp`, { grpid: grpid }, {
+
+    const showgrp = () => {
+        axios.post(`http://${server_details.server}/fetchgrp`, { grpid: currname.current }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -359,12 +350,12 @@ const Homescreen = () => {
         chatnameref.current = chatname
         const cha = e.target.id;
     }
-  
+
     const handleGrpCreate = (e) => {
-        const ret = sock.current.emit('join', {"grpid":"", "from":server_details.user})
+        const ret = sock.current.emit('join', { "grpid": "", "from": server_details.user })
         console.log(ret);
-        const temp=[]
-    }   
+        const temp = []
+    }
 
     const createTiles = () => {
         // tiles.push(<Tiles name={-1} />)
@@ -381,7 +372,7 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className='createGroup'>
-                    <img src={require("../images/create-group.png")} style={{ width: "60px", borderRadius: "10px", paddingTop: "20px"}} onClick={()=>{handleGrpCreate()} }/>
+                    <img src={require("../images/create-group.png")} style={{ width: "60px", borderRadius: "10px", paddingTop: "20px" }} onClick={() => { handleGrpCreate() }} />
                     {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
 
                 </div>
