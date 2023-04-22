@@ -5,6 +5,8 @@ import Chatbox from './Chatbox';
 import SendIcon from '@mui/icons-material/Send';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from "socket.io-client";
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 const Homescreen = () => {
     // harcoded for now , need to change it from fetched data
     const tiles = []
@@ -40,7 +42,12 @@ const Homescreen = () => {
     const [chatui, setchatui] = React.useState(initChatbox);
     const [chatclick, setclick] = React.useState(false);
     const [grpid, setgrpid] = React.useState("");
-    const currgrp = React.useRef(0);
+    const currgrp = React.useRef(-1);
+    const [addclicked, setaddclicked] = React.useState(false);
+    const setadd = React.useRef(0);
+    const [addmember, setmember] = React.useState("")
+    const currmember = React.useRef("")
+    // currgrp.current = -1
 
     console.log("Connected to server ", server_details.server, "********************************")
 
@@ -151,9 +158,11 @@ const Homescreen = () => {
             socket.on('connect_failed', err => console.log("Server crashed *********************"))
             socket.on('disconnect', err => console.log("Server crashed *********************"))
         })
+        currgrp.current = -1;
 
 
     }, [])
+    console.log(currgrp.current)
 
 
 
@@ -184,15 +193,25 @@ const Homescreen = () => {
         setchat(chatname);
         currname.current = chatname;
         if ("group " == currname.current.slice(0, 6)) {
-            const hist=showgrp(currname.current);
+            const hist = showgrp(currname.current);
+            setgrpid(currname.current)
         }
         else {
             if (chatname != "" && chatname) {
                 const chat = showchat(chatname);
+                setgrpid(-1)
                 setchatbox(chat);
             }
         }
     }, [chatclick])
+
+    React.useEffect(() => {
+        setgrpid(grpid)
+        currgrp.current = grpid;
+        console.log("asdasd************************************", currgrp.current)
+
+    }, [grpid])
+
 
     React.useEffect(() => {
         if (chatname != "" && chatname) {
@@ -241,9 +260,6 @@ const Homescreen = () => {
             }
             // var el = document.getElementById("inputtext");
             el.value = "";
-            // var el = document.getElementById("inputtext");
-            // if(el){
-            // el.value = "";
         }
     }, [submitted])
 
@@ -314,7 +330,7 @@ const Homescreen = () => {
             }
 
         }).then(response => {
-            console.log(response.data, "????????????????????????");
+            console.log(response.data, "????????????????????????", currname.current);
             setchats(response.data["history"])
             console.log("ok emitted", "?????????????????????????");
         })
@@ -363,6 +379,44 @@ const Homescreen = () => {
         }
         return tiles;
     }
+
+    const addtogroup = () => {
+        sock.current.emit("join",{"grpid":currgrp.current.slice(6,),"from":currmember.current})
+        // axios.post(`http://${server_details.server}/addtogrp`, { grpid: currname.current,email:currmember.current }, {
+        //     headers: {
+        //         'Access-Control-Allow-Origin': '*',
+        //         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+        //         'Content-Type': "application/json",
+        //     }
+
+        // }).then(response => {
+        //     console.log(response.data, "????????????????????????", currname.current);
+        //     setchats(response.data["history"])
+        //     console.log("ok emitted", "?????????????????????????");
+        // })
+        //     .catch(err => {
+        //         console.log(err);
+        //     })
+
+
+    }
+    React.useEffect(() => {
+        setaddclicked(addclicked);
+        setadd.current = addclicked;
+        if (!(setadd.current) && currmember.current != "") {
+            addtogroup();
+        }
+    }, [addclicked])
+
+    React.useEffect(() => {
+        setmember(addmember);
+        currmember.current = addmember;
+    }, [addmember])
+
+    const handleAddmember = () => {
+        setaddclicked(!(addclicked));
+    }
+
     return (
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
@@ -387,6 +441,23 @@ const Homescreen = () => {
                     )
                     }
                 </div>
+                {currgrp.current != -1 && currgrp.current && (
+
+                    <div className="grpoptions" style={{ padding: "20px" }}>
+                        {addclicked && (
+                            <div className="addmem">
+                                <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setmember(e.target.value) }}></input>
+                            </div>
+                        )
+                        }
+                        <div className="grpadd">
+                            <GroupAddIcon fontSize='large' color='white' style={{ color: "white", height: "50px", width: "50px", marginRight: "10px", cursor: "pointer" }} onClick={() => { handleAddmember() }} />
+                        </div>
+                        <div className="exit">
+                            <DeleteForeverIcon fontSize='large' color='white' style={{ color: "white", height: "50px", width: "50px", cursor: "pointer" }} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="cont" style={{ height: "88%", margin: 0, display: "flex", flexDirection: "row", background: "white", pading: "0px", justifyContent: "center", width: "100%", padding: 0 }}>
@@ -402,8 +473,6 @@ const Homescreen = () => {
 
             </div>
         </div >
-
-
     )
 }
 export default Homescreen

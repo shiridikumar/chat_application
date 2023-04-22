@@ -46,6 +46,14 @@
 
 }
 
+.grpoptions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+}
+
 .inputtext{
     width: 80%;
     height: 49px;

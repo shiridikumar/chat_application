@@ -22,17 +22,17 @@ CORS(app, support_credentials=True)
 conn = MongoClient("localhost", 27017)
 db = conn.users
 # db.server_mapping = db.server_mapping
-servers = ["server1"]  # ,"server2"]
-server_addr = {"server1":"10.1.39.116:5000"}
+servers = ["server1"]#,"server2"]  # ,"server2"]
+server_addr = {"server1":"10.1.39.116:5000"}#,"server2":"10.42.0.37:5000"}
 consistent_hashing = ConsistentHashing(servers)
-
 
 def update_ticks(data,email):
     serv_tikcs={server_addr[i]:{} for i in servers}
     for i in data:
         serv_name=db.server_mapping.find_one({"email":i},{"_id":0})
-        serv_name=serv_name["server"]
-        serv_tikcs[serv_name].update({i:data[i]})
+        if(serv_name):
+            serv_name=serv_name["server"]
+            serv_tikcs[serv_name].update({i:data[i]})
     for i in serv_tikcs:
         print(serv_tikcs,"????????????????")
         requests.post("http://{}/update_ticks".format(i),data=json.dumps({"updates":serv_tikcs[i],"from":email}))

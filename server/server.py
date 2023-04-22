@@ -341,12 +341,12 @@ def userdata():
             contacts.append(cont)
             lastmessage.append(i["history"][-1]["msg"])
 
-    grp_list = db.grp.find({"members":email})
+    grp_list = db.grp.find({"members":{"$in":[email]}})
     for i in grp_list:
-        contacts.append(i["name"])
+        contacts.append(i["name"]) 
         lastmessage.append(i["history"][-1]["msg"])
     
-    print(lastmessage,contacts) 
+    print(lastmessage,contacts,"*********************") 
     # lastmessage.reverse()
     # contacts.rev
 
@@ -406,8 +406,10 @@ def on_join(data,sid):
 
 @socketio.on('join')
 def join(data):
+    print("**********************************",data)
     if data["grpid"] == "":
-        data["grpid"]=db.grp.insert_one({"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
+        data["grpid"]=str(db.grp.insert_one({"history":[],"members":[]}).inserted_id)
+        db.grp.find_one_and_update({"_id":ObjectId(data["grpid"])},{"$set":{"name":"group "+str(data["grpid"])}})
     on_join(data,request.sid)
 
     return {"success":"200"}
@@ -428,6 +430,17 @@ def on_leave(data):
 
     return {"success":"200"}
     
+
+
+# @app.route("/addtogrp", methods=["POST"])
+# @cross_origin(supports_credentials=True,origin='*')
+# def addtogrp():
+#     data=json.loads(data)
+#     print(data)
+#     db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":data["email"]}})
+
+
+
 
 
 
