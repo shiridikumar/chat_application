@@ -16,7 +16,6 @@ const Chatbox = (props) => {
             var align = "row-reverse"
             if (chats[i].from == props.name) {
                 align = "row"
-
             }
             console.log(chats[i].from, props.name)
             row.push(

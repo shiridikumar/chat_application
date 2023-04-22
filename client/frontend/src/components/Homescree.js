@@ -97,6 +97,10 @@ const Homescreen = () => {
             }
         });
 
+        sock.current.on("grpmessage", function (data) {
+            console.log(data,"*******************")
+        });
+
         sock.current.on('delivered', function (data) {
             console.log(data, "___________________", currcont.current, currlast.current)
             const temp = []
@@ -167,6 +171,7 @@ const Homescreen = () => {
     const [chathis, setchats] = React.useState();
     const [chatui, setchatui] = React.useState(initChatbox);
     const [chatclick, setclick] = React.useState(false);
+    const [grpid,setgrpid]=React.useState("");
 
 
 
@@ -299,6 +304,27 @@ const Homescreen = () => {
             })
 
 
+            
+
+
+    }
+
+    const showgrp =()=>{
+           axios.post(`http://${server_details.server}/fetchgrp`, { grpid: grpid }, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+                'Content-Type': "application/json",
+            }
+
+        }).then(response => {
+            console.log(response.data, "????????????????????????");
+            setchats(response.data["history"])
+            console.log("ok emitted", "?????????????????????????");
+        })
+            .catch(err => {
+                console.log(err);
+            })
     }
 
     const getchat = () => {
@@ -322,8 +348,12 @@ const Homescreen = () => {
         setchat(e.target.id)
         chatnameref.current = chatname
         const cha = e.target.id;
-
     }
+  
+    const handleGrpCreate = (e) => {
+        const ret = sock.current.emit('join', {"grpid":"", "from":server_details.user})
+        console.log(ret);
+    }   
 
     const createTiles = () => {
         // tiles.push(<Tiles name={-1} />)
@@ -340,9 +370,8 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className='createGroup'>
-                <img src={require("../images/create-group.png")} style={{width:"60px", borderRadius: "10px", paddingTop:"20px"}}/>
-                {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
-
+                <img src={require("../images/create-group.png")} style={{width:"60px", borderRadius: "10px", paddingTop:"20px"}} onClick={()=>{handleGrpCreate()}}/>
+                
                 </div>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
                     <h6 style={{ color: "white" }}>Logged into {server_details.user}</h6>

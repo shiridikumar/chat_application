@@ -377,23 +377,46 @@ def recv_grp_msg(m,id):
         
     return True
 
-def on_join(data):
+
+@socketio.on('grpmessage')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_message(data):
+    global group_chats
+    print("*************************came")
+    recv_grp_msg(data,data["grpid"])
+
+    print(request.sid,"_______________")
+    print(data)
+    id = data["grpid"]
+    find_grp=db.chats.find_one({"grpid":id})
+    group_chats[id]=1
+    if(find_grp!=None):
+        db.grp.update_one({"grpid":id},{"$push":{"history":data}})
+
+    return {"success":"200"}
+
+
+def on_join(data,sid):
     email = data["from"]
-    room = data["grpid"]
-    join_room(room)
+    join_room("shiridi")
+    print("joined room",data["grpid"])
 
-    db.grp.update_one({"_id":ObjectId(room)},{"$push":{"members":email}})
-
-    send(email + ' has entered the room.', to=room)
+    db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":email}})
+    # send({"from":email,"msg":f'{email} has entered the room.'},room=data["grpid"])
+    socketio.emit("grpmessage",{"from":email,"msg":f'{email} has entered the room.'} , room="shiridi")
+    # print(ret,"******************")
     print(data)
 
 @socketio.on('join')
 def join(data):
     if data["grpid"] == "":
-        db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())})
-        data["grpid"] = str(db.grp.find_one({"grpid":ObjectId()})["_id"])   
+        print("creating group **************************************")
+        data["grpid"]=db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
+        print(data["grpid"],"************")
 
-    on_join(data)
+        # data["grpid"] = str(db.grp.find_one({"grpid":grpid})["_id"])   
+
+    on_join(data,request.sid)
 
     return {"success":"200"}
 
@@ -414,21 +437,7 @@ def on_leave(data):
     return {"success":"200"}
     
 
-@socketio.on('grpmessage')
-@cross_origin(supports_credentials=True,origin='*')
-def handle_message(data):
-    global group_chats
-    recv_grp_msg(data,data["grpid"])
 
-    print(request.sid,"_______________")
-    print(data)
-    id = data["grpid"]
-    find_grp=db.chats.find_one({"grpid":id})
-    group_chats[id]=1
-    if(find_grp!=None):
-        db.grp.update_one({"grpid":id},{"$push":{"history":data}})
-
-    return {"success":"200"}
 
 @app.route("/fetchgrp", methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')
