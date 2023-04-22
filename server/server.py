@@ -374,23 +374,40 @@ def recv_grp_msg(m,id):
         
     return True
 
-def on_join(data):
+
+@socketio.on('grpmessage')
+@cross_origin(supports_credentials=True,origin='*')
+def handle_message(data):
+    global group_chats
+    print("*************************came")
+    recv_grp_msg(data,data["grpid"])
+
+    print(request.sid,"_______________")
+    print(data)
+    id = data["grpid"]
+    find_grp=db.chats.find_one({"grpid":id})
+    group_chats[id]=1
+    if(find_grp!=None):
+        db.grp.update_one({"grpid":id},{"$push":{"history":data}})
+
+    return {"success":"200"}
+
+
+def on_join(data,sid):
     email = data["from"]
-    room = data["grpid"]
-    join_room(room)
-
-    db.grp.update_one({"_id":ObjectId(room)},{"$push":{"members":email}})
-
-    send(email + ' has entered the room.', to=room)
+    join_room(data["grpid"])
+    print("joined room",data["grpid"])
+    db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":email}})
+    socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.'} , room=data["grpid"])
+    ms=f'{email} has entered the room.'
+    db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":ms}}})
     print(data)
 
 @socketio.on('join')
 def join(data):
     if data["grpid"] == "":
-        db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())})
-        data["grpid"] = str(db.grp.find_one({"grpid":ObjectId()})["_id"])   
-
-    on_join(data)
+        data["grpid"]=db.grp.insert_one({"grpid":ObjectId(),"history":[],"members":[], "name":"group " + str(ObjectId())}).inserted_id
+    on_join(data,request.sid)
 
     return {"success":"200"}
 
@@ -411,21 +428,7 @@ def on_leave(data):
     return {"success":"200"}
     
 
-@socketio.on('grpmessage')
-@cross_origin(supports_credentials=True,origin='*')
-def handle_message(data):
-    global group_chats
-    recv_grp_msg(data,data["grpid"])
 
-    print(request.sid,"_______________")
-    print(data)
-    id = data["grpid"]
-    find_grp=db.chats.find_one({"grpid":id})
-    group_chats[id]=1
-    if(find_grp!=None):
-        db.grp.update_one({"grpid":id},{"$push":{"history":data}})
-
-    return {"success":"200"}
 
 @app.route("/fetchgrp", methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')

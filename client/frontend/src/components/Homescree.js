@@ -55,12 +55,9 @@ const Homescreen = () => {
                 temp.push(currchats[i]);
             }
         }
-        console.log("updating ra wolfa **************")
         setlastchat(temp2);
         setcontacts(temp);
     }
-
-
 
     React.useEffect(() => {
         const socket = io(`ws://${server_details.server}`);
@@ -95,6 +92,20 @@ const Homescreen = () => {
                 temp.push(data);
                 setchats(temp);
             }
+        });
+
+        sock.current.on("joingrp", function (data) {
+            const temp=["group "+data["grpid"]]
+            const temp1=[data["last"]]
+            for(var i=0;i<currcont.current.length;i++){
+                temp.push(currcont.current[i]);
+            }
+            for(var i=0;i<currlast.current.length;i++){
+                temp1.push(currlast.current[i]);
+            }
+            setlastchat(temp1);
+            setcontacts(temp);
+            console.log(data,"*******************",temp1,temp)
         });
 
         sock.current.on('delivered', function (data) {
@@ -170,6 +181,7 @@ const Homescreen = () => {
     const [chathis, setchats] = React.useState();
     const [chatui, setchatui] = React.useState(initChatbox);
     const [chatclick, setclick] = React.useState(false);
+    const [grpid,setgrpid]=React.useState("");
 
 
 
@@ -302,6 +314,27 @@ const Homescreen = () => {
             })
 
 
+            
+
+
+    }
+    
+    const showgrp =()=>{
+           axios.post(`http://${server_details.server}/fetchgrp`, { grpid: grpid }, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+                'Content-Type': "application/json",
+            }
+
+        }).then(response => {
+            console.log(response.data, "????????????????????????");
+            setchats(response.data["history"])
+            console.log("ok emitted", "?????????????????????????");
+        })
+            .catch(err => {
+                console.log(err);
+            })
     }
 
     const getchat = () => {
@@ -325,8 +358,13 @@ const Homescreen = () => {
         setchat(e.target.id)
         chatnameref.current = chatname
         const cha = e.target.id;
-
     }
+  
+    const handleGrpCreate = (e) => {
+        const ret = sock.current.emit('join', {"grpid":"", "from":server_details.user})
+        console.log(ret);
+        const temp=[]
+    }   
 
     const createTiles = () => {
         // tiles.push(<Tiles name={-1} />)
@@ -343,7 +381,7 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className='createGroup'>
-                    <img src={require("../images/create-group.png")} style={{ width: "60px", borderRadius: "10px", paddingTop: "20px" }} />
+                    <img src={require("../images/create-group.png")} style={{ width: "60px", borderRadius: "10px", paddingTop: "20px"}} onClick={()=>{handleGrpCreate()} }/>
                     {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
 
                 </div>
