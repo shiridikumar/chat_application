@@ -14,7 +14,7 @@ const Chatbox = (props) => {
     const loadmessages = () => {
         for (var i = 0; i < chats.length; i++) {
             var align = "row-reverse"
-            if (chats[i].from == props.name) {
+            if (chats[i].from != props.name) {
                 align = "row"
             }
             console.log(chats[i].from, props.name)

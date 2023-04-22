@@ -126,17 +126,81 @@ const Homescreen = () => {
         });
 
         sock.current.on("joingrp", function (data) {
+            if (data["to"] == server_details.user) {
+                const temp = ["group " + data["grpid"]]
+                const temp1 = [data["last"]]
+                for (var i = 0; i < currcont.current.length; i++) {
+                    temp.push(currcont.current[i]);
+                }
+                for (var i = 0; i < currlast.current.length; i++) {
+                    temp1.push(currlast.current[i]);
+                }
+                setlastchat(temp1);
+                setcontacts(temp);
+                console.log(data, "*******************", temp1, temp)
+            }
+            else {
+                let ind = 0;
+                for (var i = 0; i < currcont.current.length; i++) {
+                    if (currcont[i] == "group " + data["grpid"]) {
+                        ind = i;
+                        break
+                    }
+                }
+                const temp = ["group " + data["grpid"]]
+                const temp1 = [data["last"]]
+                for (var i = 0; i < currcont.current.length; i++) {
+                    if (i != ind) {
+                        temp.push(currcont.current[i]);
+                        temp1.push(currlast.current[i]);
+                    }
+                }
+                setlastchat(temp1);
+                setcontacts(temp);
+            }
+
+        });
+
+
+        sock.current.on("grpmessage", function (data) {
+            // if (data["to"] == server_details.user) {
+            //     const temp = ["group " + data["grpid"]]
+            //     const temp1 = [data["last"]]
+            //     for (var i = 0; i < currcont.current.length; i++) {
+            //         temp.push(currcont.current[i]);
+            //     }
+            //     for (var i = 0; i < currlast.current.length; i++) {
+            //         temp1.push(currlast.current[i]);
+            //     }
+            //     setlastchat(temp1);
+            //     setcontacts(temp);
+            //     console.log(data, "*******************", temp1, temp)
+            // }
+            // else{
+            let ind = 0;
+            for (var i = 0; i < currcont.current.length; i++) {
+                if (currcont[i] == "group " + data["grpid"]) {
+                    ind = i;
+                    break
+                }
+            }
             const temp = ["group " + data["grpid"]]
             const temp1 = [data["last"]]
             for (var i = 0; i < currcont.current.length; i++) {
-                temp.push(currcont.current[i]);
-            }
-            for (var i = 0; i < currlast.current.length; i++) {
-                temp1.push(currlast.current[i]);
+                if (i != ind) {
+                    temp.push(currcont.current[i]);
+                    temp1.push(currlast.current[i]);
+                }
             }
             setlastchat(temp1);
             setcontacts(temp);
-            console.log(data, "*******************", temp1, temp)
+            if(currgrp.current==data["grpid"]){
+                const temp=[];
+
+
+            }
+            // }
+
         });
 
         sock.current.on('delivered', function (data) {
@@ -280,19 +344,23 @@ const Homescreen = () => {
             "time": dformat,
             "seen": 0
         }
-
-        console.log(dformat, "??????????????????");
-        const res = sock.current.emit('message', obj)
-        const temp = [];
-        update_list(obj["to"], obj["msg"], chats, lastchat);
-        const temp1 = [];
-        if (chathis) {
-            for (var i = 0; i < chathis.length; i++) {
-                temp1.push(chathis[i]);
-            }
+        if (currname.current.slice(0, 6) == "group ") {
+            sock.current.emit("grpmessage",{"grpid":currgrp.current.slice(6,),"msg":msg,"from":server_details.user})
         }
-        temp1.push(obj);
-        setchats(temp1);
+        else {
+            console.log(dformat, "??????????????????");
+            const res = sock.current.emit('message', obj)
+            const temp = [];
+            update_list(obj["to"], obj["msg"], chats, lastchat);
+            const temp1 = [];
+            if (chathis) {
+                for (var i = 0; i < chathis.length; i++) {
+                    temp1.push(chathis[i]);
+                }
+            }
+            temp1.push(obj);
+            setchats(temp1);
+        }
 
     }
 
@@ -342,7 +410,7 @@ const Homescreen = () => {
     const getchat = () => {
         return (
             <div className="chatblock" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "rgb(240,242,245)" }}>
-                <Chatbox chats={chathis} name={chatname} />
+                <Chatbox chats={chathis} name={server_details.user} />
                 <div className="enter_text" style={{ background: "rgb(240,242,245)", margin: "20px" }} >
                     <input id="inputtext" placeholder='Enter a new message' className='inputtext' onChange={(e) => { settext(e.target.value) }}></input>
                     <SendIcon onClick={() => { setsubmitted(!(submitted)) }} sx={{ cursor: "pointer", color: "rgb(0, 168, 132);", width: "40px", height: "40px" }} />
@@ -381,7 +449,7 @@ const Homescreen = () => {
     }
 
     const addtogroup = () => {
-        sock.current.emit("join",{"grpid":currgrp.current.slice(6,),"from":currmember.current})
+        sock.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": currmember.current })
         // axios.post(`http://${server_details.server}/addtogrp`, { grpid: currname.current,email:currmember.current }, {
         //     headers: {
         //         'Access-Control-Allow-Origin': '*',
