@@ -95,13 +95,12 @@ const Homescreen = () => {
                 temp.push(data);
                 setchats(temp);
             }
-
         });
 
         sock.current.on('delivered', function (data) {
             console.log(data, "___________________", currcont.current, currlast.current)
             const temp = []
-            console.log("deliver tick recieved doole mari",data.from,currname.current)
+            console.log("deliver tick recieved doole mari",data.from,currname.current,data["chat_ind"],data["chat_ind"].length)
             if (currname.current == data.from){
                 for (var i = 0; i < currhis.current.length; i++) {
                     temp.push(currhis.current[i])
