@@ -16,10 +16,11 @@ const Homescreen = () => {
     const currcont = React.useRef();
     const currlast = React.useRef();
     const currname = React.useRef();
+    const [lastseen, setlastseen] = React.useState("");
     // const [sock,setsocket]=React.useState();
     const sock = React.useRef(0);
     const currhis = React.useRef();
-    console.log("Connected to server ",server_details.server,"********************************")
+    console.log("Connected to server ", server_details.server, "********************************")
 
     const update_list = (from, last, currchats, currlastchat) => {
         console.log(currchats, currlastchat, "________________")
@@ -164,6 +165,11 @@ const Homescreen = () => {
         }
     }, [chathis])
 
+    React.useEffect(() => {
+        setlastseen(lastseen);
+
+    }, [lastseen])
+
 
     React.useEffect(() => {
         setchatui(chatui);
@@ -191,7 +197,7 @@ const Homescreen = () => {
         setsubmitted(submitted);
         if (textfield != "") {
             var el = document.getElementById("inputtext");
-            if(el.value!=""){
+            if (el.value != "") {
                 sendchat(textfield);
             }
             // var el = document.getElementById("inputtext");
@@ -205,12 +211,21 @@ const Homescreen = () => {
 
 
     const sendchat = (msg) => {
+        var d = new Date,
+        dformat = [d.getMonth()+1,
+                   d.getDate(),
+                   d.getFullYear()].join('/')+' '+
+                  [d.getHours(),
+                   d.getMinutes(),
+                   d.getSeconds()].join(':');
         const obj = {
             "from": server_details.user,
             "msg": msg,
-            "to": chatname
+            "to": chatname,
+            "time":dformat   
         }
-        // console.log(sock);
+    
+        console.log(dformat,"??????????????????");
         const res = sock.current.emit('message', obj)
         const temp = [];
         update_list(obj["to"], obj["msg"], chats, lastchat);
@@ -243,8 +258,9 @@ const Homescreen = () => {
 
             // console.log(response.data["chats"],chathis)
             // const res=socketRef.current.emit('message',{1:2,2:3})
+            setlastseen(response.data["lastseen"])
 
-            console.log("ok emitted");
+            console.log("ok emitted", response.data["lastseen"], "?????????????????????????");
         })
             .catch(err => {
                 console.log(err);
@@ -292,14 +308,20 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
+                    <h6 style={{color:"white"}}>Logged into {server_details.user}</h6>
                     <div className="emailfield">
                         <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setchat(e.target.value) }}></input>
                         <SendIcon onClick={() => { setclick(!(chatclick)) }} sx={{ cursor: "pointer", color: "white", width: "40px", height: "40px" }} />
                     </div>
                     <h6 style={{ color: "white" }}>Start Conversation</h6>
+
                 </div>
                 <div className="chatname" style={{ width: "100%", background: "rgb(0,168,132)" }}>
-                    <h6 style={{ fontSize: "20px" }}>{chatname}</h6>
+                    <h6 style={{ fontSize: "20px", marginRight: "30px" }}>{chatname}</h6>
+                    {lastseen && lastseen!="" && (
+                        <h6>Last seen : {lastseen}</h6>
+                    )
+                    }
                 </div>
             </div>
 

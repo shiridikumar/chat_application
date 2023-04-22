@@ -21,6 +21,7 @@ import socket
 import os
 import argparse
 import threading
+import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -90,7 +91,7 @@ def recv_msg(m,email):
     
     if(email in connection_objects):
         print("already present in connection objects")
-        socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"]},room=connection_objects[email])
+        socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"],"time":m["time"],"seen":0},room=connection_objects[email])
 
     else:
         # print(m,"*******************************"
@@ -121,6 +122,11 @@ def handle_disconnect():
             # print(i["chatname"],"*************************************")
             upds.append(i)
     data={"updated":upds}
+    # ls=str(datetime.datetime.now())
+    # print(ls)
+    # d=datetime.datetime.strptime(ls,"%Y-%m-%dT%H:%M:%S.000Z")
+    # print(d)
+    db.users.find_one_and_update({"email":email},{"$set":{"lastseen":str(datetime.datetime.now())}})
     print(len(upds),"***************")
     r = requests.post(url=CENTRAL_SERVER+str("/backup_data"),data=json.dumps(data))
     print(request.sid,"_______________","Disconnected")
@@ -132,10 +138,10 @@ def handle_disconnect():
 def handle_message(data):
     global updated_chats
     recv_msg(data,data["to"])
-    # print(request.sid,"_______________")
-    # print(data)
     from_=data["from"]
     to=data["to"]
+    data["seen"]=0
+    # data["time"]=datetime.datetime.now()
     chatname=sorted([from_,to])
     chathis=db.chats.find_one({"chatname":chatname})
     updated_chats[tuple(chatname)]=1
@@ -157,6 +163,32 @@ def handle_message(data):
 def handle_connect(data):
     global connection_objects
     connection_objects[data["email"]]=request.sid
+    db.users.find_one_and_update({"email":data["email"]},{"$set":{"lastseen":"online"}})
+    res=db.chats.find({"chatname": { "$in": [data["email"]] } },{"_id":0})
+    chat_ticks={}
+    for i in res:
+        other=i["chatname"][0]
+        if(other==data["email"]):
+            other=i["chatname"][1]
+        l=[]
+        chathis=i["chathis"]
+        j=len(chathis)-1
+        while(j>=0):
+            if(chathis[j]["seen"]==1 or chathis[j]["seen"]==2):
+                break
+            else:
+                chathis[j]["seen"]=1
+            j-=1
+            l.append(chathis[j])
+        chat_ticks.update({other:l})
+
+        
+
+        
+
+    # print(updated_chats)
+
+
     return {"200":"2000"}
 
 
@@ -164,14 +196,18 @@ def handle_connect(data):
 @cross_origin(supports_credentials=True,origin='*')
 def fetchchat():
     data =json.loads(request.data)
-    # print(data,"*************")
     user=data["user"]
     chat=data["chat"]
     chatname=sorted([user,chat])
     chats=db.chats.find_one({"chatname":chatname})
+    lastseen=None
+    target=db.users.find_one({"email":chat})
+    print(target)
+    if(target):
+        lastseen=target["lastseen"]
     if(chats==None):
         chats={"history":[]}
-    return {"chats":chats["history"]}
+    return {"chats":chats["history"],"lastseen":lastseen}
 
 
 @app.route("/send_from_server",methods=["POST"])
@@ -218,6 +254,7 @@ def userdata():
     print(lastmessage,contacts) 
     # lastmessage.reverse()
     # contacts.rev
+
     return {"lastmessage":lastmessage[::-1],"contacts":contacts[::-1]}
 
 
