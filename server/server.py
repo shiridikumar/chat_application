@@ -33,7 +33,7 @@ parser.add_argument("-PORT" ,"--port_no", help = "Show Output")
 parser.add_argument("-IP","--server",help="Show Output")
 args = parser.parse_args()
 #need to  Store in a different way -------------------
-args.server="10.1.39.116"
+# args.server="10.1.39.116"
 global connection_objects
 connection_objects={}
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
