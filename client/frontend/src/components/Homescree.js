@@ -340,6 +340,11 @@ const Homescreen = () => {
     return (
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
+                <div className='createGroup'>
+                <img src={require("../images/create-group.png")} style={{width:"60px", borderRadius: "10px", paddingTop:"20px"}}/>
+                {/* <img src={require("../images/chat.png")} style={{ height: "150px", width: "150px" }} /> */}
+
+                </div>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
                     <h6 style={{ color: "white" }}>Logged into {server_details.user}</h6>
                     <div className="emailfield">

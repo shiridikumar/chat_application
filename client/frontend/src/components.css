@@ -65,3 +65,11 @@ textarea:focus, input:focus{
     width: 200px;
     text-align:left;
 }
+
+.createGroup {
+    width: 100px;
+    padding: 2px;
+    border: 1px;
+    border-radius: 10px;
+    flex-direction: left;
+}
