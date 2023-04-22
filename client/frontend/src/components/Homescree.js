@@ -302,11 +302,6 @@ const Homescreen = () => {
             .catch(err => {
                 console.log(err);
             })
-
-
-            
-
-
     }
 
     const showgrp =()=>{
