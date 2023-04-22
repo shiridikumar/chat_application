@@ -95,7 +95,7 @@ def signin():
             j -= 1
         chat_ticks.update({other: l})
         db.chats.find_one_and_update({"chatname":i["chatname"]},{"$set":{"history":chathis}})
-    print(chat_ticks,"??????????????????????????????????????????????")
+    print(chat_ticks,"??????????????????????????????????????????????","needto_be updated")
     update_ticks(chat_ticks,email)
 
     print(lastmessage, contacts)
@@ -153,6 +153,25 @@ def fetchchat():
     chatname = sorted([user, chat])
     chats = db.chats.find_one({"chatname": chatname})
     print(chats)
+
+
+@app.route("/update_central_data", methods=["POST"])
+@cross_origin(supports_credentials=True, origin='*')
+def update_data():
+    data=json.loads(request.data)
+    print(data,"?????????????????????????")
+    print(data["chatname"])
+    db.chats.find_one_and_update({"chatname":data["chatname"]},{"$set":{"history":data["history"]}})
+    print("succesfully updated")
+    return {200:200}
+
+
+@app.route("/insert_central_data", methods=["POST"])
+@cross_origin(supports_credentials=True, origin='*')
+def insert_data():
+    data=json.loads(request.data)
+    db.chats.insert_one(data)
+    return {200:200}
 
 
 if __name__ == "__main__":

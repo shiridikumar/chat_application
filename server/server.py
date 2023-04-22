@@ -44,7 +44,7 @@ HOST=None
 PORT=5000
 try:
     if(args.server==None):
-        raise ValueError
+        args.server="10.1.39.116"
     if(args.port_no!=None):
         PORT=int(args.port_no)
     if(args.server!=None):
@@ -98,7 +98,7 @@ def find_key(sid):
 
 def recv_msg(m,email,ind):
     global redirection_server,connection_objects,current_outgoing_conns
-    #(connection_objects,"****************")
+    print(connection_objects,"****************")
     
     if(email in connection_objects):
         #("already present in connection objects")
@@ -106,12 +106,13 @@ def recv_msg(m,email,ind):
         if("from_server" in m):
             requests.post("http://{}/send_deliver".format(m["from_server"]),data=json.dumps({"from":m["to"],"to":m["from"],"ind":ind}))
         else:
-            print("************* in connection objects still")
             chatname=sorted([m["to"],m["from"]])
             his=db.chats.find_one({"chatname":chatname})
             chathis=his["history"]
             chathis[ind]["seen"]=1
-            db.users.find_one_and_update({"chatname":chatname},{"$set":{"history":chathis}})
+            ret=db.chats.find_one_and_update({"chatname":chatname},{"$set":{"history":chathis}},return_document=True)
+            ret.pop("_id")
+            requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
             socketio.emit("delivered",{"from":m["to"],"chat_ind":[ind]},room=connection_objects[m["from"]])
 
 
@@ -124,7 +125,8 @@ def recv_msg(m,email,ind):
         if(data["server"]!=server_name):
             ob={"data":m,"from_server":server_name}
             req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
-        # else:
+        else:
+            print("user offline *****************************")
 
         #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
         
@@ -151,10 +153,11 @@ def handle_disconnect():
         print(connection_objects)
 
         
-    db.users.find_one_and_update({"email":email},{"$set":{"lastseen":str(datetime.datetime.now())}})
+    ret=db.users.find_one_and_update({"email":email},{"$set":{"lastseen":str(datetime.datetime.now())}},{"_id":0})
+    # requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
     
     #(len(upds),"***************")
-    r = requests.post(url=CENTRAL_SERVER+str("/backup_data"),data=json.dumps(data))
+    # r = requests.post(url=CENTRAL_SERVER+str("/backup_data"),data=json.dumps(data))
     print(request.sid,"_______________","Disconnected")
     return {200:2000}
 
@@ -173,12 +176,21 @@ def handle_message(data):
     ind=0
     if(chathis!=None):
         chathis["history"].append(data)
+        print(chathis,"********")
         ind=len(chathis["history"])-1
-        db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+        ret=db.chats.find_one_and_update({"chatname":chatname},{ "$set": { 'history': chathis["history"] }},return_document=True)
+        # print(len(ret["history"]),"_________________",len(chathis["history"]))
+      
+        ret.pop("_id")
+        requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
     else:
         chathis={"history":[data],"chatname":chatname}
         db.chats.insert_one(chathis)
+        print()
+        requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
+
         ind=len(chathis["history"])-1
+
 
     recv_msg(data,data["to"],ind)
     
@@ -193,7 +205,8 @@ def handle_message(data):
 def handle_connect(data):
     global connection_objects
     connection_objects[data["email"]]=request.sid
-    db.users.find_one_and_update({"email":data["email"]},{"$set":{"lastseen":"online"}})
+    ret=db.users.find_one_and_update({"email":data["email"]},{"$set":{"lastseen":"online"}},{"_id":0})
+    # requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
     res=db.chats.find({"chatname": { "$in": [data["email"]] } },{"_id":0})
     chat_ticks={}
     for i in res:
@@ -204,12 +217,17 @@ def handle_connect(data):
         chathis=i["history"]
         j=len(chathis)-1
         while(j>=0):
+            if(chathis[j]["from"]!=other):
+                j-=1
+                continue
             if(chathis[j]["seen"]==1 or chathis[j]["seen"]==2):
                 break
             else:
                 chathis[j]["seen"]=1
             j-=1
-        db.chats.find_one_and_update({"chatname":i["chatname"]},{"$set":{"history":chathis}})
+        ret=db.chats.find_one_and_update({"chatname":i["chatname"]},{"$set":{"history":chathis}},return_document=True)
+        ret.pop("_id")
+        requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
         updated_chats[tuple(i["chatname"])]=1
         
         
@@ -248,8 +266,10 @@ def send_deliver():
     ob=db.chats.find_one({"chatname":chatname})
     his=ob["history"]
     his[data["ind"]]["seen"]=1
-    db.chats.find_one_and_update({"chatname":chatname},{"$set":{"history":his}})
-    updated_chats[tuple(chatname)]=1
+    ret=db.chats.find_one_and_update({"chatname":chatname},{"$set":{"history":his}},return_document=True)
+    ret.pop("_id")
+    requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
+    # updated_chats[tuple(chatname)]=1
     if(data["to"] in connection_objects):
         socketio.emit("delivered",{"from":target,"chat_ind":[data["ind"]]},room=connection_objects[data["to"]])
     return {200:200}
@@ -293,11 +313,14 @@ def send_from_server():
         if(chathis!=None):
             chathis["history"].append(data)
             ind=len(chathis["history"])-1
-            db.chats.update_one({"chatname":chatname},{ "$set": { 'history': chathis["history"] } })
+            ret=db.chats.find_one_and_update({"chatname":chatname},{ "$set": { 'history': chathis["history"] } },return_document=True)
+            ret.pop("_id")
+            requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
         else:
             chathis={"history":[data],"chatname":chatname}
             ind=len(chathis["history"])-1
             db.chats.insert_one(chathis)
+            requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
     
     recv_msg(data,data["to"],ind)
         
