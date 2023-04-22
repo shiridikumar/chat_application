@@ -42,7 +42,6 @@ function Signin() {
 
     axios.post("http://172.18.0.1:8080/signin", data, {
         headers: {
-  
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
           'Content-Type': "application/json",
