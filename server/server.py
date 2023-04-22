@@ -79,8 +79,7 @@ grp_connections={}
 
 conn = MongoClient("localhost",27017)
 db = conn.users
-global connection_objects
-connection_objects={}
+
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
