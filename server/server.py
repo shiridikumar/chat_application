@@ -171,7 +171,7 @@ def handle_connect(data):
         if(other==data["email"]):
             other=i["chatname"][1]
         l=[]
-        chathis=i["chathis"]
+        chathis=i["history"]
         j=len(chathis)-1
         while(j>=0):
             if(chathis[j]["seen"]==1 or chathis[j]["seen"]==2):
@@ -179,8 +179,10 @@ def handle_connect(data):
             else:
                 chathis[j]["seen"]=1
             j-=1
-            l.append(chathis[j])
-        chat_ticks.update({other:l})
+        db.chats.find_one_and_update({"chatname":i["chatname"]},{"$set":{"history":chathis}})
+        
+        
+
 
         
 
@@ -190,6 +192,28 @@ def handle_connect(data):
 
 
     return {"200":"2000"}
+
+@app.route("/update_ticks",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def update_ticks():
+    global connection_objects
+    data=json.loads(request.data)
+    target=data["from"]
+    data=data["updates"]
+    print(data,"****************************************************************")
+    for i in data:
+        email=i
+        if i in connection_objects:
+            socketio.emit("delivered",{"from":target,"chat_ind":data[i]},room=connection_objects[i])
+    return {200:200}
+    
+    
+
+
+
+
+
+
 
 
 @app.route("/fetchchat",methods=["POST"])

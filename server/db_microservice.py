@@ -27,14 +27,15 @@ server_addr = {"server1": "10.1.39.116:5000"}  # ,"server2":"10.42.0.208:5050"}
 consistent_hashing = ConsistentHashing(servers)
 
 
-def update_ticks(data):
-    serv_tikcs={server_addr[i]:[] for i in servers}
+def update_ticks(data,email):
+    serv_tikcs={server_addr[i]:{} for i in servers}
     for i in data:
-        serv_name=db.find_one({"email":i},{"_id":0})
+        serv_name=db.server_mapping.find_one({"email":i},{"_id":0})
         serv_name=serv_name["server"]
-        serv_tikcs[serv_name].append({i:data[i]})
+        serv_tikcs[serv_name].update({i:data[i]})
     for i in serv_tikcs:
-        request.post("http://{}/update_ticks".format(i),data=serv_tikcs[i])
+        print(serv_tikcs,"????????????????")
+        requests.post("http://{}/update_ticks".format(i),data=json.dumps({"updates":serv_tikcs[i],"from":email}))
 
 
 @app.after_request
@@ -80,17 +81,22 @@ def signin():
         lastmessage.append(i["history"][-1]["msg"])
         other=cont
         l=[]
-        chathis = i["chathis"]
+        chathis = i["history"]
         j = len(chathis)-1
         while(j >= 0):
+            if(chathis[j]["to"]!=email):
+                j-=1
+                continue
             if(chathis[j]["seen"] == 1 or chathis[j]["seen"] == 2):
                 break
             else:
                 chathis[j]["seen"] = 1
-            j -= 1
             l.append(j)
+            j -= 1
         chat_ticks.update({other: l})
-        update_ticks(chat_ticks)
+        db.chats.find_one_and_update({"chatname":i["chatname"]},{"$set":{"history":chathis}})
+    print(chat_ticks,"??????????????????????????????????????????????")
+    update_ticks(chat_ticks,email)
 
     print(lastmessage, contacts)
 

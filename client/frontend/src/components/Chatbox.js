@@ -20,7 +20,7 @@ const Chatbox = (props) => {
             }
             console.log(chats[i].from, props.name)
             row.push(
-                <Messagebox align={align} text={chats[i].msg} time={chats[i].time} />
+                <Messagebox align={align} text={chats[i].msg} time={chats[i].time} seen={chats[i].seen}/>
             )
         }
         return row;

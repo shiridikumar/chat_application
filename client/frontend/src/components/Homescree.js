@@ -98,6 +98,38 @@ const Homescreen = () => {
 
         });
 
+        sock.current.on('delivered', function (data) {
+            console.log(data, "___________________", currcont.current, currlast.current)
+            const temp = []
+            console.log("deliver tick recieved doole mari",data.from,currname.current)
+            if (currname.current == data.from){
+                for (var i = 0; i < currhis.current.length; i++) {
+                    temp.push(currhis.current[i])
+                }
+
+                for (var i = 0; i < data["chat_ind"].length; i++) {
+                    temp[data["chat_ind"][i]]["seen"]=1;
+                }
+                console.log(temp);
+                setchats(temp);
+            }
+            
+
+            // // setrecv(!(recv));
+            // // update_list(data["from"], data["msg"], currcont.current, currlast.current);
+            // // if (currname.current == data["from"]) {
+            //     const temp = []
+            //     console.log(currhis.current, "************************")
+            //     for (var i = 0; i < currhis.current.length; i++) {
+            //         temp.push(currhis.current[i]);
+            //     }
+            //     temp.push(data);
+            //     setchats(temp);
+            // }
+
+        });
+
+
     }, [])
 
 
@@ -212,20 +244,21 @@ const Homescreen = () => {
 
     const sendchat = (msg) => {
         var d = new Date,
-        dformat = [d.getMonth()+1,
-                   d.getDate(),
-                   d.getFullYear()].join('/')+' '+
-                  [d.getHours(),
-                   d.getMinutes(),
-                   d.getSeconds()].join(':');
+            dformat = [d.getMonth() + 1,
+            d.getDate(),
+            d.getFullYear()].join('/') + ' ' +
+                [d.getHours(),
+                d.getMinutes(),
+                d.getSeconds()].join(':');
         const obj = {
             "from": server_details.user,
             "msg": msg,
             "to": chatname,
-            "time":dformat   
+            "time": dformat,
+            "seen":0
         }
-    
-        console.log(dformat,"??????????????????");
+
+        console.log(dformat, "??????????????????");
         const res = sock.current.emit('message', obj)
         const temp = [];
         update_list(obj["to"], obj["msg"], chats, lastchat);
@@ -308,7 +341,7 @@ const Homescreen = () => {
         <div className="homescreen" style={{ height: "100vh", width: "100%", background: "#d1d7db", padding: "0px" }}>
             <div className="topblock" style={{ display: "flex", "flexDirection": "row", alignContent: "center", height: "12%", background: "rgb(0,168,132)" }}>
                 <div className="tilehead" style={{ width: "30%", display: "flex", flexDirection: "column", justifyContent: "center", alignContent: "center", "alignItems": "center" }} >
-                    <h6 style={{color:"white"}}>Logged into {server_details.user}</h6>
+                    <h6 style={{ color: "white" }}>Logged into {server_details.user}</h6>
                     <div className="emailfield">
                         <input style={{ borderRadius: "5px", height: "30px", "width": "200px" }} placeholder='Enter a mail id' className='inputtext' onChange={(e) => { setchat(e.target.value) }}></input>
                         <SendIcon onClick={() => { setclick(!(chatclick)) }} sx={{ cursor: "pointer", color: "white", width: "40px", height: "40px" }} />
@@ -318,7 +351,7 @@ const Homescreen = () => {
                 </div>
                 <div className="chatname" style={{ width: "100%", background: "rgb(0,168,132)" }}>
                     <h6 style={{ fontSize: "20px", marginRight: "30px" }}>{chatname}</h6>
-                    {lastseen && lastseen!="" && (
+                    {lastseen && lastseen != "" && (
                         <h6>Last seen : {lastseen}</h6>
                     )
                     }
