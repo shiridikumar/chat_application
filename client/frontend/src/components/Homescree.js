@@ -126,7 +126,7 @@ const Homescreen = () => {
         });
 
         sock.current.on("joingrp", function (data) {
-            console.log("somehting happend","?????????????????????????????")
+            console.log("somehting happend", "?????????????????????????????",data)
             if (data["to"] == server_details.user) {
                 const temp = ["group " + data["grpid"]]
                 const temp1 = [data["last"]]
@@ -141,6 +141,7 @@ const Homescreen = () => {
                 console.log(data, "*******************", temp1, temp)
             }
             else {
+                console.log("somehting happend", "?????????????????????????????",currgrp.current,currname.current)
                 let ind = 0;
                 for (var i = 0; i < currcont.current.length; i++) {
                     if (currcont[i] == "group " + data["grpid"]) {
@@ -160,39 +161,50 @@ const Homescreen = () => {
                 setcontacts(temp);
             }
 
+            if (currname.current.slice(6,) == data["grpid"]) {
+                const temp = [];
+                for (var i = 0; i < currhis.current.length; i++) {
+                    temp.push(currhis.current[i]);
+                }
+                temp.push({ "from": data["to"], "msg": data["last"] })
+                console.log(temp,"???????????????????")
+
+                setchats(temp);
+            }
         });
 
 
-        // sock.current.on("grpmessage", function (data) {
-        //     console.log("recieved grp message *************",data)
-        //     let ind = 0;
-        //     for (var i = 0; i < currcont.current.length; i++) {
-        //         if (currcont[i] == "group " + data["grpid"]) {
-        //             ind = i;
-        //             break
-        //         }
-        //     }
-        //     const temp = ["group " + data["grpid"]]
-        //     const temp1 = [data["last"]]
-        //     for (var i = 0; i < currcont.current.length; i++) {
-        //         if (i != ind) {
-        //             temp.push(currcont.current[i]);
-        //             temp1.push(currlast.current[i]);
-        //         }
-        //     }
-        //     setlastchat(temp1);
-        //     setcontacts(temp);
-        //     if(currgrp.current==data["grpid"]){
-        //         const temp=[];
-        //         for(var i=0;i<currhis.current.length;i++){
-        //             temp.push(currhis.current[i]);
-        //         }
-        //         temp.push({"from":data["from"],"msg":data["msg"]})
-        //     }
-        //     setchats(temp);
-        //     // }
+        sock.current.on("grpmessage", function (data) {
+            console.log("recieved grp message *************",data)
+            let ind = 0;
+            for (var i = 0; i < currcont.current.length; i++) {
+                if (currcont[i] == "group " + data["grpid"]) {
+                    ind = i;
+                    break
+                }
+            }
+            const temp = ["group " + data["grpid"]]
+            const temp1 = [data["msg"]]
+            for (var i = 0; i < currcont.current.length; i++) {
+                if (i != ind) {
+                    temp.push(currcont.current[i]);
+                    temp1.push(currlast.current[i]);
+                }
+            }
+            setlastchat(temp1);
+            setcontacts(temp);
+            if(currgrp.current.slice(6,)==data["grpid"]){
+                const temp=[];
+                for(var i=0;i<currhis.current.length;i++){
+                    temp.push(currhis.current[i]);
+                }
+                temp.push({"from":data["from"],"msg":data["msg"]})
+                setchats(temp);
+            }
+           
+            // }
 
-        // });
+        });
 
         sock.current.on('delivered', function (data) {
             console.log(data, "___________________", currcont.current, currlast.current)
@@ -225,8 +237,15 @@ const Homescreen = () => {
         setrecv(recv);
         setlastchat(lastchat);
         setcontacts(chats);
+       
         currcont.current = chats
         currlast.current = lastchat
+        for(var i=0;i<currcont.current.length;i++){
+            console.log("asdasdasdasd","*********************************")
+            if(chats[i].slice(0,6)=="group "){
+                sock.current.emit("join", { "grpid": currcont.current[i].slice(6,), "from": server_details.user })
+            }
+        }
         console.log(chats, lastchat)
     }, [chats, lastchat, recv])
 
@@ -336,7 +355,7 @@ const Homescreen = () => {
             "seen": 0
         }
         if (currname.current.slice(0, 6) == "group ") {
-            sock.current.emit("join",{"grpid":currgrp.current.slice(6,),"msg":msg,"from":server_details.user})
+            sock.current.emit("grpmessage", { "grpid": currgrp.current.slice(6,), "msg": msg, "from": server_details.user })
         }
         else {
             console.log(dformat, "??????????????????");
@@ -389,6 +408,7 @@ const Homescreen = () => {
             }
 
         }).then(response => {
+            sock.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": server_details.user })
             console.log(response.data, "????????????????????????", currname.current);
             setchats(response.data["history"])
             console.log("ok emitted", "?????????????????????????");

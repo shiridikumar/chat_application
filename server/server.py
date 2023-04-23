@@ -396,26 +396,23 @@ def handle_message(data):
 def on_join(data,sid):
     email = data["from"]
     us=db.grp.find_one({"_id":ObjectId(data["grpid"])})
+   
+    join_room(data["grpid"])
+    # print(data["grpid"],"__________________________________")
+    print("joined room",data["grpid"])
     if(data["from"] not in us["members"]):
-        join_room(data["grpid"])
-        # print(data["grpid"],"__________________________________")
-        print("joined room",data["grpid"])
         db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":email}})
         print(data["grpid"],"__________________________________",type(data["grpid"]))
         socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.' ,"to":email} , room=data["grpid"])
         ms=f'{email} has entered the room.'
         db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":ms}}})
-        print(data)
-
+    print(data)
 
 @socketio.on('join')
 def join(data):
-    # print("**********************************",data)
-
     if("msg" in data):
         email=data["from"]
         msg=data["msg"]
-        print("**********************************",data)
         db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":msg}}})
         socketio.emit("grpmessage",{"grpid":str(data["grpid"])} , room="64445aa4b6e2d0bf606b7c4a")
     else:
@@ -423,8 +420,6 @@ def join(data):
             data["grpid"]=str(db.grp.insert_one({"history":[],"members":[]}).inserted_id)
             db.grp.find_one_and_update({"_id":ObjectId(data["grpid"])},{"$set":{"name":"group "+str(data["grpid"])}})
         on_join(data,request.sid)
-
-    return {"success":"200"}
 
 
 @socketio.on('leave')
@@ -440,22 +435,22 @@ def on_leave(data):
         db.grp.delete_one({"_id":ObjectId(room)})
         close_room(room)
 
-    return {"success":"200"}
+    # return {"success":"200"}
     
-# def send_msg(data):
-#     email=data["from"]
-#     msg=data["msg"]
-#     print(data["grpid"],"******************",data)
-#     # socketio.emit("joingrp",{"grpid":str(data["grpid"]),"msg":msg ,"from":email} , room=data["grpid"])
-#     socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.' ,"to":email} , room="64445aa4b6e2d0bf606b7c4a")
-#     # ms=f'{email} has entered the room.'
-#     db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":msg}}})
+def send_msg(data):
+    email=data["from"]
+    msg=data["msg"]
+    print(data["grpid"],"??????????????????????????????????",data)
+    socketio.emit("grpmessage",{"grpid":str(data["grpid"]),"msg":msg ,"from":email} , room=data["grpid"])
+    # socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.' ,"to":email} , room="64445aa4b6e2d0bf606b7c4a")
+    # ms=f'{email} has entered the room.'
+    db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"history":{"from":data["from"],"msg":msg}}})
 
 
-# @socketio.on('grpmessage')
-# def on_message(data):
-#     send_msg(data)
-#     return {200:200}
+@socketio.on('grpmessage')
+def on_message(data):
+    send_msg(data)
+    return {200:200}
 
 
 # @app.route("/addtogrp", methods=["POST"])
