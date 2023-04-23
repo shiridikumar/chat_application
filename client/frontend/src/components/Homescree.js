@@ -29,6 +29,7 @@ const Homescreen = () => {
         )
     }
     const sock = React.useRef(0);
+    const sock1 = React.useRef(0);
     const currhis = React.useRef();
     const [chatname, setchat] = React.useState("")
     const initChatbox = initbox();
@@ -125,7 +126,9 @@ const Homescreen = () => {
             }
         });
 
-        sock.current.on("joingrp", function (data) {
+        const socket1 = io(`ws://${"10.1.39.116:8080"}`);
+        sock1.current = socket1;
+        sock1.current.on("joingrp", function (data) {
             console.log("somehting happend", "?????????????????????????????",data)
             if (data["to"] == server_details.user) {
                 const temp = ["group " + data["grpid"]]
@@ -174,7 +177,7 @@ const Homescreen = () => {
         });
 
 
-        sock.current.on("grpmessage", function (data) {
+        sock1.current.on("grpmessage", function (data) {
             console.log("recieved grp message *************",data)
             let ind = 0;
             for (var i = 0; i < currcont.current.length; i++) {
@@ -243,7 +246,7 @@ const Homescreen = () => {
         for(var i=0;i<currcont.current.length;i++){
             console.log("asdasdasdasd","*********************************")
             if(chats[i].slice(0,6)=="group "){
-                sock.current.emit("join", { "grpid": currcont.current[i].slice(6,), "from": server_details.user })
+                sock1.current.emit("join", { "grpid": currcont.current[i].slice(6,), "from": server_details.user })
             }
         }
         console.log(chats, lastchat)
@@ -355,7 +358,7 @@ const Homescreen = () => {
             "seen": 0
         }
         if (currname.current.slice(0, 6) == "group ") {
-            sock.current.emit("grpmessage", { "grpid": currgrp.current.slice(6,), "msg": msg, "from": server_details.user })
+            sock1.current.emit("grpmessage", { "grpid": currgrp.current.slice(6,), "msg": msg, "from": server_details.user })
         }
         else {
             console.log(dformat, "??????????????????");
@@ -400,7 +403,7 @@ const Homescreen = () => {
     }
 
     const showgrp = () => {
-        axios.post(`http://${server_details.server}/fetchgrp`, { grpid: currname.current }, {
+        axios.post(`http://${"10.1.39.116:8080"}/fetchgrp`, { grpid: currname.current }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -408,7 +411,7 @@ const Homescreen = () => {
             }
 
         }).then(response => {
-            sock.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": server_details.user })
+            sock1.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": server_details.user })
             console.log(response.data, "????????????????????????", currname.current);
             setchats(response.data["history"])
             console.log("ok emitted", "?????????????????????????");
@@ -442,7 +445,7 @@ const Homescreen = () => {
     }
 
     const handleGrpCreate = (e) => {
-        const ret = sock.current.emit('join', { "grpid": "", "from": server_details.user })
+        const ret = sock1.current.emit('join', { "grpid": "", "from": server_details.user })
         console.log(ret);
         const temp = []
     }
@@ -460,7 +463,7 @@ const Homescreen = () => {
     }
 
     const addtogroup = () => {
-        sock.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": currmember.current })
+        sock1.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": currmember.current })
         // axios.post(`http://${server_details.server}/addtogrp`, { grpid: currname.current,email:currmember.current }, {
         //     headers: {
         //         'Access-Control-Allow-Origin': '*',

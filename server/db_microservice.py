@@ -12,12 +12,14 @@ import requests
 import pymongo
 from pymongo import MongoClient
 from Consistenthashing import ConsistentHashing
+from flask_socketio import SocketIO
+from flask_socketio import send, emit, join_room, leave_room, close_room, rooms
 
 PORT = 8080
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app, support_credentials=True)
-
+socketio = SocketIO(app, cors_allowed_origins="*",async_handlers=True, pingTimeout=900)
 
 conn = MongoClient("localhost", 27017)
 db = conn.users
@@ -173,6 +175,132 @@ def insert_data():
     db.chats.insert_one(data)
     return {200:200}
 
+def recv_grp_msg(m,id):
+    global redirection_server, grp_connections
+    if(id in grp_connections):
+        socketio.emit("grpmessage",{"from":m["from"],"msg":m["msg"]},room=grp_connections[id])
 
+    else:
+        # print(m,"*******************************")
+        r = requests.post(url=DB_URL, data=json.dumps(m))
+        data = r.json()
+        print(data,"__________________________")
+
+        if(data["server"]!=server_name):
+            ob={"data":m,"from_server":server_name}
+            req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
+        # else:
+
+        #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
+        
+    return True
+
+
+# @socketio.on('grpmessage')
+# @cross_origin(supports_credentials=True,origin='*')
+# def handle_message(data):
+#     global group_chats
+#     print("*************************came")
+#     recv_grp_msg(data,data["grpid"])
+
+#     print(request.sid,"_______________")
+#     print(data)
+#     id = data["grpid"]
+#     find_grp=db.grp.find_one({"_id":id})
+#     group_chats[id]=1
+#     if(find_grp!=None):
+#         db.grp.update_one({"_id":id},{"$push":{"history":data}})
+
+#     return {"success":"200"}
+
+
+def on_join(data,sid):
+    email = data["from"]
+    us=db.grp.find_one({"name":"group "+data["grpid"]})
+    join_room(data["grpid"])
+    print("joined room",data["grpid"])
+    if(data["from"] not in us["members"]):
+        ret=db.grp.find_one_and_update({"name":"group "+data["grpid"]},{"$push":{"members":email}},return_document=True)
+        ret.pop("_id")
+        print(data["grpid"],"__________________________________",type(data["grpid"]))
+        socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.' ,"to":email} , room=data["grpid"])
+        ms=f'{email} has entered the room.'
+        ret=db.grp.find_one_and_update({"name":"group "+data["grpid"]},{"$push":{"history":{"from":data["from"],"msg":ms}}},return_document=True)
+        ret.pop("_id")
+        for i in server_addr:
+            requests.post(f'http://{server_addr[i]}/update_group',data=json.dumps(ret))
+
+    print(data)
+
+@socketio.on('join')
+def join(data):
+    if data["grpid"] == "":
+        data["grpid"]=str(db.grp.insert_one({"history":[],"members":[]}).inserted_id)
+        ret=db.grp.find_one_and_update({"_id":ObjectId(data["grpid"])},{"$set":{"name":"group "+str(data["grpid"])}},return_document=True)
+        ret.pop("_id")
+        for i in server_addr:
+            requests.post(f'http://{server_addr[i]}/add_group',data=json.dumps(ret))
+    on_join(data,request.sid)
+
+
+@socketio.on('leave')
+def on_leave(data):
+    email = data["from"]
+    room = data["grpid"]
+    leave_room(room)
+    
+    db.grp.update_one({"_id":ObjectId(room)},{"$pull":{"members":email}})
+    send(email + ' has left the room.', to=room)
+
+    if len(db.grp.find_one({"_id":ObjectId(room)})["members"]) == 0:
+        db.grp.delete_one({"_id":ObjectId(room)})
+        close_room(room)
+
+    # return {"success":"200"}
+    
+def send_msg(data):
+    email=data["from"]
+    msg=data["msg"]
+    print(data["grpid"],"??????????????????????????????????",data)
+    socketio.emit("grpmessage",{"grpid":str(data["grpid"]),"msg":msg ,"from":email} , room=data["grpid"])
+    # socketio.emit("joingrp",{"grpid":str(data["grpid"]),"last":f'{email} has entered the room.' ,"to":email} , room="64445aa4b6e2d0bf606b7c4a")
+    # ms=f'{email} has entered the room.'
+    ret=db.grp.find_one_and_update({"name":"group "+data["grpid"]},{"$push":{"history":{"from":data["from"],"msg":msg}}},return_document=True)
+    ret.pop("_id")
+    for i in server_addr:
+        requests.post(f'http://{server_addr[i]}/update_group',data=json.dumps(ret))
+
+
+@socketio.on('grpmessage')
+def on_message(data):
+    send_msg(data)
+    return {200:200}
+
+
+# @app.route("/addtogrp", methods=["POST"])
+# @cross_origin(supports_credentials=True,origin='*')
+# def addtogrp():
+#     data=json.loads(data)
+#     print(data)
+#     db.grp.update_one({"_id":ObjectId(data["grpid"])},{"$push":{"members":data["email"]}})
+
+
+
+
+
+
+@app.route("/fetchgrp", methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def fetchgrp():
+    data=json.loads(request.data)
+    print(data)
+    id=data["grpid"]
+    id=id[6:]
+    print(id,"***********************")
+    find_grp=db.grp.find_one({"_id":ObjectId(id)})
+    if(find_grp==None):
+        return {"history":[]}
+    return {"history":find_grp["history"]}
 if __name__ == "__main__":
-    app.run(debug=True, port=8080, host="10.1.39.116")
+    # app.run(debug=True, port=8080, host="10.1.39.116")
+    socketio.run(app,port=PORT,host="10.1.39.116")
