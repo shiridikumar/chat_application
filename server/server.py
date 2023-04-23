@@ -370,6 +370,10 @@ def a_group():
     if(HOST!=CENTRAL_SERVER.split(":")[0]):
         db.grp.find_one_and_update({"name":data["name"]},{"$set":data})
 
+@app.route("/test",methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def test():
+    return {"working":1}
 
 #-----------------Group chat---------------------
 

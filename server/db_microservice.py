@@ -1,5 +1,6 @@
 from http.client import responses
 import json
+from multiprocessing import dummy
 import flask
 from flask import Flask, redirect, url_for, request, render_template, send_file, jsonify
 import werkzeug
@@ -26,6 +27,9 @@ db = conn.users
 # db.server_mapping = db.server_mapping
 servers = ["server1"]#,"server2"]  # ,"server2"]
 server_addr = {"server1":"10.1.39.116:5000"}#,"server2":"10.42.0.37:5000"}
+
+backup_servers=["server3"]
+backup_addr={"server3":"10.1.39.116:6000"}
 consistent_hashing = ConsistentHashing(servers)
 
 def update_ticks(data,email):
@@ -144,7 +148,6 @@ def server_map():
         return user
     return {1: 1}
 
-
 @app.route("/fetchchat", methods=["POST"])
 @cross_origin(supports_credentials=True, origin='*')
 def fetchchat():
@@ -155,7 +158,6 @@ def fetchchat():
     chatname = sorted([user, chat])
     chats = db.chats.find_one({"chatname": chatname})
     print(chats)
-
 
 @app.route("/update_central_data", methods=["POST"])
 @cross_origin(supports_credentials=True, origin='*')
@@ -229,8 +231,8 @@ def on_join(data,sid):
         ret.pop("_id")
         for i in server_addr:
             requests.post(f'http://{server_addr[i]}/update_group',data=json.dumps(ret))
-
     print(data)
+
 
 @socketio.on('join')
 def join(data):
@@ -301,6 +303,36 @@ def fetchgrp():
     if(find_grp==None):
         return {"history":[]}
     return {"history":find_grp["history"]}
+
+@app.route("/server_failure", methods=["POST"])
+@cross_origin(supports_credentials=True,origin='*')
+def server_failure():
+    data=json.loads(request.data)
+    serv=data["server"]
+    print(data,"************************")
+    addr=[]
+    for i in server_addr:
+        addr.append(server_addr[i])
+
+    if(serv in addr):
+        try :
+            requests.post("http://{}/test".format(serv),data={"1":"1"})
+        except:
+            print("failing" ,"*********************************")
+            consistent_hashing.add_server(backup_servers[0])
+            for i in server_addr:
+                if(data["server"]==server_addr[i]):
+                    consistent_hashing.remove_server(i)
+                    server_addr.pop(i)
+                    break
+        
+            return {"newserver":backup_addr[backup_servers[0]]}
+        else:
+            return {200:200}
+    return {"newserver":backup_addr[backup_servers[0]]}
+
+
+
 if __name__ == "__main__":
     # app.run(debug=True, port=8080, host="10.1.39.116")
     socketio.run(app,port=PORT,host="10.1.39.116")
