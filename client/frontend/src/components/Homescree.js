@@ -12,7 +12,6 @@ const Homescreen = () => {
     const tiles = []
     const location = useLocation();
     const server_details = location.state.data;
-    // server_details.server="10.1.39.116:6000"
     const [chats, setcontacts] = React.useState([]);
     const [lastchat, setlastchat] = React.useState([]);
     const [recv, setrecv] = React.useState(false);
@@ -46,23 +45,12 @@ const Homescreen = () => {
     const [grpid, setgrpid] = React.useState("");
     const currgrp = React.useRef(-1);
     const [addclicked, setaddclicked] = React.useState(false);
-    // const navigate=useNavigate()
     const setadd = React.useRef(0);
     const [addmember, setmember] = React.useState("")
     const currmember = React.useRef("")
-    const [serv,setserver]=React.useState(server_details.server)
-    const currserver=React.useRef(server_details.server)
     // currgrp.current = -1
 
     console.log("Connected to server ", server_details.server, "********************************")
-
-
-    React.useEffect(()=>{
-        setserver(serv)
-        currserver.current=serv
-        console.log(currserver.current,"*****************************")
-
-    },[serv])
 
     const update_list = (from, last, currchats, currlastchat) => {
         console.log(currchats, currlastchat, "________________")
@@ -104,11 +92,11 @@ const Homescreen = () => {
     }, [grpid])
 
     React.useEffect(() => {
-        currserver.current=server_details.server
-        const socket = io(`ws://${currserver.current}`);
+        const socket = io(`ws://${server_details.server}`);
 
-        axios.post(`http://${currserver.current}/userdata`, { email: server_details.user }, {
+        axios.post(`http://${server_details.server}/userdata`, { email: server_details.user }, {
             headers: {
+
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
                 'Content-Type': "application/json",
@@ -236,33 +224,15 @@ const Homescreen = () => {
                 console.log(temp);
                 setchats(temp);
             }
-           
+            socket.on('connect_error', err => console.log("Server crashed *********************"))
+            socket.on('connect_failed', err => console.log("Server crashed *********************"))
+            socket.on('disconnect', err => console.log("Server crashed *********************"))
         })
-        sock.current.on('connect_error', err => {
-            axios.post(`http://${"10.1.39.116:8080"}/server_failure`, { server: server_details.server }, {
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
-                    'Content-Type': "application/json",
-                }
-    
-            }).then(response => {
-                console.log(response.data);
-                if("newserver" in response.data){
-                    console.log(response.data["newserver"])
-                    server_details.server=response.data["newserver"]
-                    navigate("/home",{state:{data:server_details}})
-                    setserver(response.data["server"])
-                }
-            })
-        })
-        sock.current.on('connect_failed', err => console.log("Server crashed *********************"))
-        sock.current.on('disconnect', err => console.log("Server crashed *********************"))
         currgrp.current = -1;
-        
-    }, [serv])
-    console.log(currgrp.current)
 
+
+    }, [])
+    console.log(currgrp.current)
 
 
 
@@ -410,7 +380,7 @@ const Homescreen = () => {
 
     const showchat = (cha) => {
         console.log(cha, "************")
-        axios.post(`http://${currserver.current}/fetchchat`, { chat: cha, user: server_details.user }, {
+        axios.post(`http://${server_details.server}/fetchchat`, { chat: cha, user: server_details.user }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -494,7 +464,7 @@ const Homescreen = () => {
 
     const addtogroup = () => {
         sock1.current.emit("join", { "grpid": currgrp.current.slice(6,), "from": currmember.current })
-        // axios.post(`http://${currserver.current}/addtogrp`, { grpid: currname.current,email:currmember.current }, {
+        // axios.post(`http://${server_details.server}/addtogrp`, { grpid: currname.current,email:currmember.current }, {
         //     headers: {
         //         'Access-Control-Allow-Origin': '*',
         //         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',

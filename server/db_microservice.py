@@ -26,7 +26,7 @@ conn = MongoClient("localhost", 27017)
 db = conn.users
 # db.server_mapping = db.server_mapping
 servers = ["server1","server2"]  # ,"server2"]
-server_addr = {"server1":"10.1.39.116:5000","server2":"10.42.0.37"}#,"server2":"10.42.0.37:5000"}
+server_addr = {"server1":"10.1.39.116:5000","server2":"10.42.0.37:5000"}#,"server2":"10.42.0.37:5000"}
 
 backup_servers=["server3"]
 backup_addr={"server3":"10.1.39.116:6000"}

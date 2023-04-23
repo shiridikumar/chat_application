@@ -114,7 +114,7 @@ def recv_msg(m,email,ind):
             ret=db.chats.find_one_and_update({"chatname":chatname},{"$set":{"history":chathis}},return_document=True)
             ret.pop("_id")
             requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
-            socketio.emit("delivered",{"from":m["to"],"chat_ind":[ind]},room=connection_objects[m["from"]])
+            socketio.emit("delivered",{"from":m["to"],"chat_ind":[ind]},room=connection_objects[email])
 
 
     else:
@@ -184,9 +184,8 @@ def handle_message(data):
     else:
         chathis={"history":[data],"chatname":chatname}
         db.chats.insert_one(chathis)
-        print()
+        print(chathis)
         requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
-
         ind=len(chathis["history"])-1
 
 
@@ -318,6 +317,7 @@ def send_from_server():
             chathis={"history":[data],"chatname":chatname}
             ind=len(chathis["history"])-1
             db.chats.insert_one(chathis)
+            print(chathis)
             requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
     
     recv_msg(data,data["to"],ind)
