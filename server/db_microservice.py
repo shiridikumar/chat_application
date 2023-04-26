@@ -30,10 +30,10 @@ conn = MongoClient("localhost", 27017)
 db = conn.users
 # db.server_mapping = db.server_mapping
 servers = ["server1","server2"]  # ,"server2"]
-server_addr = {"server1":"10.1.39.61:5000","server2":"10.42.0.245:5000"}#,"server2":"10.42.0.37:5000"}
+server_addr = {"server1":"10.2.130.98:5000","server2":"10.2.131.140:5000"}#,"server2":"10.42.0.37:5000"}
 
 backup_servers=["server3"]
-backup_addr={"server3":"10.42.0.245:6000"}
+backup_addr={"server3":"10.2.130.98:6000"}
 consistent_hashing = ConsistentHashing(servers)
 
 def update_ticks(data,email):

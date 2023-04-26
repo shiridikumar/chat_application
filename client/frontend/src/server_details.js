@@ -1,1 +1,1 @@
-export const CENTRAL_SERVER="10.42.0.245:8080"
+export const CENTRAL_SERVER="10.2.131.140:8080"
