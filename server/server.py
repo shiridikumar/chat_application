@@ -126,8 +126,9 @@ def recv_msg(m,email,ind):
         #("***********************",data,"__________________________")
 
         if(data["server"]!=server_name):
-            ob={"data":m,"from_server":server_name}
-            req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(ob))
+            # ob={"data":m,"from_server":server_name}
+            m["from_server"]=server_name
+            req=requests.post(url=f'http://{data["server"]}/send_from_server',data=json.dumps(m))
         else:
             print("user offline *****************************")
     return True
@@ -184,11 +185,14 @@ def handle_message(data):
         ret.pop("_id")
         requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
     else:
-        chathis={"history":[data],"chatname":chatname}
-        db.chats.insert_one(chathis)
-        print(chathis)
-        requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
-        ind=len(chathis["history"])-1
+        chathis1={"history":[data],"chatname":chatname}
+        db.chats.insert_one(chathis1)
+        print(chathis1)
+        if("_id" in chathis1):
+            chathis1.pop("_id")
+
+        requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis1))
+        ind=len(chathis1["history"])-1
 
 
     recv_msg(data,data["to"],ind)
@@ -251,7 +255,7 @@ def send_deliver():
     global connection_objects
     data=json.loads(request.data)
     target=data["from"]
-    chatname=sorted([data["frrom"],data["to"]])
+    chatname=sorted([data["from"],data["to"]])
     ob=db.chats.find_one({"chatname":chatname})
     his=ob["history"]
     his[data["ind"]]["seen"]=1
@@ -291,7 +295,7 @@ def send_from_server():
     data=json.loads(request.data)
     from_server=data["from_server"].split(":")[0]
     #(data,"+++++++++++++++++++++++++++")
-    data=data["data"]
+    # data=data["data"]
     if(from_server!=HOST):
         from_=data["from"]
         to=data["to"]
@@ -309,6 +313,8 @@ def send_from_server():
             chathis={"history":[data],"chatname":chatname}
             ind=len(chathis["history"])-1
             db.chats.insert_one(chathis)
+            if "_id" in chathis:
+                chathis.pop("_id")
             print(chathis)
             requests.post(url=CENTRAL_SERVER+str("/insert_central_data"),data=json.dumps(chathis))
     

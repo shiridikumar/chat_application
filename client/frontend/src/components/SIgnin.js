@@ -58,7 +58,7 @@ function Signin() {
   const [password,setpassword]=React.useState("");
   const [user,setUser]=React.useState("");
   const navigate=useNavigate();
-  console.log(CENTRAL_SERVER,"*********************************")
+  // console.log(CENTRAL_SERVER,"*********************************")
   
 
 
