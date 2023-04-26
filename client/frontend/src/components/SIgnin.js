@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+import { CENTRAL_SERVER } from '../server_details';
 
 function Copyright(props) {
   return (
@@ -40,7 +41,7 @@ function Signin() {
     // });
     const data ={"email":user,"password":password};
 
-    axios.post("http://10.1.39.116:8080/signin", data, {
+    axios.post(`http://${CENTRAL_SERVER}/signin`, data, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
@@ -57,6 +58,7 @@ function Signin() {
   const [password,setpassword]=React.useState("");
   const [user,setUser]=React.useState("");
   const navigate=useNavigate();
+  console.log(CENTRAL_SERVER,"*********************************")
   
 
 

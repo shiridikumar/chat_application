@@ -7,6 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from "socket.io-client";
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { CENTRAL_SERVER } from '../server_details';
+
 const Homescreen = () => {
     // harcoded for now , need to change it from fetched data
     const tiles = []
@@ -126,7 +128,7 @@ const Homescreen = () => {
             }
         });
 
-        const socket1 = io(`ws://${"10.1.39.116:8080"}`);
+        const socket1 = io(`ws://${CENTRAL_SERVER}`);
         sock1.current = socket1;
         sock1.current.on("joingrp", function (data) {
             console.log("somehting happend", "?????????????????????????????",data)
@@ -403,7 +405,7 @@ const Homescreen = () => {
     }
 
     const showgrp = () => {
-        axios.post(`http://${"10.1.39.116:8080"}/fetchgrp`, { grpid: currname.current }, {
+        axios.post(`http://${CENTRAL_SERVER}/fetchgrp`, { grpid: currname.current }, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',

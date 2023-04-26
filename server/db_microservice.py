@@ -15,21 +15,25 @@ from pymongo import MongoClient
 from Consistenthashing import ConsistentHashing
 from flask_socketio import SocketIO
 from flask_socketio import send, emit, join_room, leave_room, close_room, rooms
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 PORT = 8080
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app, support_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*",async_handlers=True, pingTimeout=900)
-
+HOST=os.getenv("CENTRAL_SERVER")[7:-5]
+print(HOST)
 conn = MongoClient("localhost", 27017)
 db = conn.users
 # db.server_mapping = db.server_mapping
-servers = ["server1","server2"]  # ,"server2"]
-server_addr = {"server1":"10.1.39.116:5000","server2":"10.42.0.37:5000"}#,"server2":"10.42.0.37:5000"}
+servers = ["server1"]#,"server2"]  # ,"server2"]
+server_addr = {"server1":"10.2.131.140:5000"}#,"server2":"10.42.0.37:5000"}#,"server2":"10.42.0.37:5000"}
 
 backup_servers=["server3"]
-backup_addr={"server3":"10.1.39.116:6000"}
+backup_addr={"server3":"10.2.131.140:6000"}
 consistent_hashing = ConsistentHashing(servers)
 
 def update_ticks(data,email):
@@ -159,6 +163,8 @@ def fetchchat():
     chats = db.chats.find_one({"chatname": chatname})
     print(chats)
 
+    return {200:200}
+
 @app.route("/update_central_data", methods=["POST"])
 @cross_origin(supports_credentials=True, origin='*')
 def update_data():
@@ -196,6 +202,7 @@ def recv_grp_msg(m,id):
         #     send_msg(connection_objects[m["_id"]],m["from"],m["msg"],m["_id"],m["server"])
         
     return True
+
 
 
 # @socketio.on('grpmessage')
@@ -288,7 +295,12 @@ def on_message(data):
 
 
 
-
+@app.route("/getserver",methods=["POST"])
+@cross_origin(supports_credentials=True,origin="*")
+def getserver():
+    data=json.loads(request.data)
+    serv=db.server_mapping.find_one({"email":data["email"]})
+    return {"server":serv["server"]}
 
 
 @app.route("/fetchgrp", methods=["POST"])
@@ -308,6 +320,7 @@ def fetchgrp():
 @cross_origin(supports_credentials=True,origin='*')
 def server_failure():
     data=json.loads(request.data)
+    print(data)
     serv=data["server"]
     print(data,"************************")
     addr=[]
@@ -324,15 +337,21 @@ def server_failure():
                 if(data["server"]==server_addr[i]):
                     consistent_hashing.remove_server(i)
                     server_addr.pop(i)
+                    server_addr[backup_servers[0]]=backup_addr[backup_servers[0]]
                     break
         
             return {"newserver":backup_addr[backup_servers[0]]}
         else:
-            return {200:200}
+            return {"newserver":backup_addr[backup_servers[0]]}
+        finally:
+            db.server_mapping.find_one_and_update({"email":data["email"]},{"$set":{"server_name":backup_servers[0],"server":backup_addr[backup_servers[0]]}})
+
     return {"newserver":backup_addr[backup_servers[0]]}
 
 
 
 if __name__ == "__main__":
     # app.run(debug=True, port=8080, host="10.1.39.116")
-    socketio.run(app,port=PORT,host="10.1.39.116")
+    socketio.run(app,port=PORT,host=HOST)
+
+

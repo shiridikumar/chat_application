@@ -43,9 +43,11 @@ if(args.port_no!=None):
 
 HOST=None
 PORT=5000
+
+default=os.getenv("CENTRAL_SERVER")[7:-5]
 try:
     if(args.server==None):
-        args.server="10.1.39.116"
+        args.server=default
     if(args.port_no!=None):
         PORT=int(args.port_no)
     if(args.server!=None):
@@ -66,7 +68,7 @@ global current_outgoing_conns
 current_outgoing_conns={}
 server_name=HOST+":"+str(PORT)
 CENTRAL_SERVER=os.getenv("CENTRAL_SERVER")
-DB_URL = "http://10.1.39.116:8080/server_map"
+DB_URL = CENTRAL_SERVER+"/server_map"
 
 
 global updated_chats
@@ -99,10 +101,10 @@ def find_key(sid):
 
 def recv_msg(m,email,ind):
     global redirection_server,connection_objects,current_outgoing_conns
-    print(connection_objects,"****************")
+    print(connection_objects,"****************",m,email,ind)
     
-    if(email in connection_objects):
-        #("already present in connection objects")
+    if(m["to"] in connection_objects):
+        print("already present in connection objects")
         socketio.emit("message",{"from":m["from"],"to":m["to"],"msg":m["msg"],"time":m["time"],"seen":0},room=connection_objects[email])
         if("from_server" in m):
             requests.post("http://{}/send_deliver".format(m["from_server"]),data=json.dumps({"from":m["to"],"to":m["from"],"ind":ind}))
@@ -114,7 +116,7 @@ def recv_msg(m,email,ind):
             ret=db.chats.find_one_and_update({"chatname":chatname},{"$set":{"history":chathis}},return_document=True)
             ret.pop("_id")
             requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
-            socketio.emit("delivered",{"from":m["to"],"chat_ind":[ind]},room=connection_objects[email])
+            socketio.emit("delivered",{"from":m["to"],"chat_ind":[ind]},room=connection_objects[m["from"]])
 
 
     else:
@@ -226,16 +228,6 @@ def handle_connect(data):
         ret.pop("_id")
         requests.post(url=CENTRAL_SERVER+str("/update_central_data"),data=json.dumps(ret))
         updated_chats[tuple(i["chatname"])]=1
-        
-        
-
-
-        
-
-        
-
-    # #(updated_chats)
-
 
     return {"200":"2000"}
 
@@ -369,6 +361,8 @@ def a_group():
     print(data)
     if(HOST!=CENTRAL_SERVER.split(":")[0]):
         db.grp.find_one_and_update({"name":data["name"]},{"$set":data})
+    
+    return {200:200}
 
 @app.route("/test",methods=["POST"])
 @cross_origin(supports_credentials=True,origin='*')
